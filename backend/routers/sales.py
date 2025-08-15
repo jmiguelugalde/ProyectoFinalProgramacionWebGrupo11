@@ -1,8 +1,11 @@
+from typing import Any, Dict, List, Optional, cast
+from decimal import Decimal
+from datetime import datetime
+
 from fastapi import APIRouter, HTTPException, Depends
 from backend.models.sale import SaleCreate, SaleOut
-from backend.security import cliente_required, get_current_user, TokenData
+from backend.security import cliente_required, TokenData
 import mysql.connector
-from datetime import datetime
 import os
 from dotenv import load_dotenv
 
@@ -18,57 +21,164 @@ def get_db_connection():
         database=os.getenv("DB_NAME")
     )
 
+# ---------- Helpers de casting seguros ----------
+def to_int(x: Any, default: int = 0) -> int:
+    try:
+        if x is None:
+            return default
+        if isinstance(x, int):
+            return x
+        if isinstance(x, (float, Decimal)):
+            return int(x)
+        if isinstance(x, (bytes, bytearray)):
+            try:
+                return int(float(x.decode().strip()))
+            except Exception:
+                return default
+        s = str(x).strip()
+        if not s:
+            return default
+        return int(float(s))
+    except Exception:
+        return default
+
+def to_float(x: Any, default: float = 0.0) -> float:
+    try:
+        if x is None:
+            return default
+        if isinstance(x, (float, int)):
+            return float(x)
+        if isinstance(x, Decimal):
+            return float(x)
+        if isinstance(x, (bytes, bytearray)):
+            try:
+                return float(x.decode().strip())
+            except Exception:
+                return default
+        s = str(x).strip()
+        if not s:
+            return default
+        return float(s)
+    except Exception:
+        return default
+# ------------------------------------------------
+
 @router.post("/agregar", response_model=dict)
 def agregar_venta(data: SaleCreate, current_user: TokenData = Depends(cliente_required)):
+    # Validaciones básicas
+    cantidad = to_int(data.cantidad)
+    if cantidad <= 0:
+        raise HTTPException(status_code=400, detail="La cantidad debe ser mayor a cero.")
+
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
+    try:
+        # Traer precio y stock del producto
+        cursor.execute(
+            "SELECT precio_venta, stock FROM products WHERE id = %s",
+            (to_int(data.producto_id),)
+        )
+        producto = cast(Optional[Dict[str, Any]], cursor.fetchone())
+        if not producto:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
 
-    cursor.execute("SELECT precio_venta FROM products WHERE id = %s", (data.producto_id,))
-    producto = cursor.fetchone()
-    if not producto:
-        raise HTTPException(status_code=404, detail="Producto no encontrado")
+        precio = to_float(producto.get("precio_venta"))
+        stock_actual = to_int(producto.get("stock"))
 
-    precio = float(producto["precio_venta"])
-    total = precio * data.cantidad
+        if stock_actual < cantidad:
+            raise HTTPException(status_code=400, detail="Stock insuficiente para realizar la venta")
 
-    cursor.execute(
-        "INSERT INTO sales (usuario, producto_id, cantidad, precio_unitario, total, fecha) VALUES (%s, %s, %s, %s, %s, %s)",
-        (current_user.username, data.producto_id, data.cantidad, precio, total, datetime.now())
-    )
+        total = float(precio * cantidad)
 
-    cursor.execute(
-        "UPDATE products SET stock = stock - %s WHERE id = %s AND stock >= %s",
-        (data.cantidad, data.producto_id, data.cantidad)
-    )
-    if cursor.rowcount == 0:
+        # Actualizar stock (condicional)
+        cursor.execute(
+            "UPDATE products SET stock = stock - %s WHERE id = %s AND stock >= %s",
+            (cantidad, to_int(data.producto_id), cantidad)
+        )
+        if cursor.rowcount == 0:
+            # Otro proceso podría haber consumido el stock entre la lectura y la actualización
+            conn.rollback()
+            raise HTTPException(status_code=400, detail="Stock insuficiente para realizar la venta")
+
+        # Insertar la venta
+        cursor.execute(
+            """
+            INSERT INTO sales (usuario, producto_id, cantidad, precio_unitario, total, fecha)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (
+                str(current_user.username),
+                to_int(data.producto_id),
+                cantidad,
+                float(precio),
+                total,
+                datetime.now(),
+            ),
+        )
+
+        conn.commit()
+        return {"mensaje": "Venta registrada correctamente"}
+    except mysql.connector.Error as err:
         conn.rollback()
-        conn.close()
-        raise HTTPException(status_code=400, detail="Stock insuficiente para realizar la venta")
-
-    conn.commit()
-    conn.close()
-    return {"mensaje": "Venta registrada correctamente"}
+        raise HTTPException(status_code=500, detail=f"Error en la base de datos: {err}")
+    finally:
+        try:
+            cursor.close()
+        finally:
+            conn.close()
 
 @router.get("/mis-ventas", response_model=list[SaleOut])
 def ver_mis_ventas(current_user: TokenData = Depends(cliente_required)):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM sales WHERE usuario = %s", (current_user.username,))
-    ventas = cursor.fetchall()
-    conn.close()
-    return ventas
+    try:
+        cursor.execute(
+            "SELECT * FROM sales WHERE usuario = %s",
+            (str(current_user.username),)
+        )
+        ventas = cast(List[Dict[str, Any]], cursor.fetchall() or [])
+        # (Opcional) normalizar tipos por si el modelo es estricto
+        for v in ventas:
+            v["producto_id"] = to_int(v.get("producto_id"))
+            v["cantidad"] = to_int(v.get("cantidad"))
+            v["precio_unitario"] = to_float(v.get("precio_unitario"))
+            v["total"] = to_float(v.get("total"))
+        return ventas
+    finally:
+        try:
+            cursor.close()
+        finally:
+            conn.close()
 
 @router.delete("/{venta_id}", response_model=dict)
 def eliminar_venta(venta_id: int, current_user: TokenData = Depends(cliente_required)):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("SELECT * FROM sales WHERE id = %s AND usuario = %s", (venta_id, current_user.username))
-    venta = cursor.fetchone()
-    if not venta:
-        raise HTTPException(status_code=404, detail="Venta no encontrada o no autorizada")
+    try:
+        cursor.execute(
+            "SELECT id, usuario, cantidad, producto_id FROM sales WHERE id = %s AND usuario = %s",
+            (to_int(venta_id), str(current_user.username))
+        )
+        venta = cast(Optional[Dict[str, Any]], cursor.fetchone())
+        if not venta:
+            raise HTTPException(status_code=404, detail="Venta no encontrada o no autorizada")
 
-    cursor.execute("DELETE FROM sales WHERE id = %s", (venta_id,))
-    cursor.execute("UPDATE products SET stock = stock + %s WHERE id = %s", (venta["cantidad"], venta["producto_id"]))
-    conn.commit()
-    conn.close()
-    return {"mensaje": "Venta eliminada y stock restaurado"}
+        cantidad = to_int(venta.get("cantidad"))
+        producto_id = to_int(venta.get("producto_id"))
+
+        cursor.execute("DELETE FROM sales WHERE id = %s", (to_int(venta_id),))
+        cursor.execute(
+            "UPDATE products SET stock = stock + %s WHERE id = %s",
+            (cantidad, producto_id)
+        )
+
+        conn.commit()
+        return {"mensaje": "Venta eliminada y stock restaurado"}
+    except mysql.connector.Error as err:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error en la base de datos: {err}")
+    finally:
+        try:
+            cursor.close()
+        finally:
+            conn.close()

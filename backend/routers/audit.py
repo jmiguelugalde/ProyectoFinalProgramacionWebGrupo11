@@ -1,13 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException
-from backend.models.audit import TomaFisicaCreate, DiferenciaInventario
-from backend.security import contador_required
-import mysql.connector
+from backend.models.audit import TomaFisicaCreate, TomaFisicaDetalle
+from backend.security import admin_required, get_current_user, TokenData
 import os
 from dotenv import load_dotenv
-from datetime import datetime
-
 load_dotenv()
-router = APIRouter(prefix="/auditorias", tags=["auditorias"])
+import mysql.connector
 
 def get_db_connection():
     return mysql.connector.connect(
@@ -18,50 +15,72 @@ def get_db_connection():
         database=os.getenv("DB_NAME")
     )
 
-@router.post("/toma-fisica", response_model=dict)
-def registrar_toma_fisica(data: TomaFisicaCreate, _=Depends(contador_required)):
-    conn = get_db_connection()
-    cursor = conn.cursor()
+router = APIRouter(prefix="/auditoria", tags=["auditoria"])
 
-    cursor.execute(
-        "INSERT INTO inventory_audits (fecha, usuarios) VALUES (%s, %s)",
-        (datetime.now(), ",".join(data.usuarios))
-    )
-    audit_id = cursor.lastrowid
+@router.post("/toma-fisica")
+def registrar_toma_fisica(
+    toma: TomaFisicaCreate,
+    usuario: TokenData = Depends(get_current_user)
+):
+    # Valida rol
+    if usuario.role not in ["contador", "admin"]:
+        raise HTTPException(status_code=403, detail="No tiene permisos para registrar toma física")
 
-    for detalle in data.detalles:
-        cursor.execute(
-            "SELECT stock, costo, descripcion FROM products WHERE id = %s",
-            (detalle.producto_id,)
-        )
-        producto = cursor.fetchone()
-        if not producto:
-            continue
-
-        cantidad_teorica = producto[0] or 0
-        costo = producto[1]
-        cursor.execute(
-            "INSERT INTO inventory_audit_details (audit_id, producto_id, cantidad_encontrada, cantidad_teorica, costo_unitario) VALUES (%s, %s, %s, %s, %s)",
-            (audit_id, detalle.producto_id, detalle.cantidad_encontrada, cantidad_teorica, costo)
-        )
-
-    conn.commit()
-    conn.close()
-    return {"mensaje": "Toma física registrada correctamente"}
-
-@router.get("/diferencias/{audit_id}", response_model=list[DiferenciaInventario])
-def obtener_diferencias(audit_id: int, _=Depends(contador_required)):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
-    cursor.execute("""
-        SELECT p.descripcion, p.marca, p.codigo_barras,
-               d.cantidad_encontrada, d.cantidad_teorica,
-               (d.cantidad_encontrada - d.cantidad_teorica) AS diferencia_unidades,
-               ROUND((d.cantidad_encontrada - d.cantidad_teorica) * d.costo_unitario, 2) AS diferencia_monetaria
-        FROM inventory_audit_details d
-        JOIN products p ON d.producto_id = p.id
-        WHERE d.audit_id = %s
-    """, (audit_id,))
-    resultados = cursor.fetchall()
-    conn.close()
-    return resultados
+
+    # Resolver usuario_id a partir del username del token
+    usuario_id = None
+    try:
+        cursor.execute("SELECT id FROM users WHERE username = %s", (usuario.username,))
+        row = cursor.fetchone()
+        if row and 'id' in row:
+            usuario_id = row['id']
+    except Exception:
+        usuario_id = None
+
+    try:
+        # Insertar encabezado (observaciones='', usuarios_presentes=','.join(toma.usuarios))
+        cursor.execute("""
+            INSERT INTO toma_fisica (usuario_id, fecha, observaciones, usuarios_presentes)
+            VALUES (%s, NOW(), %s, %s)
+        """, (usuario_id, '', ','.join(toma.usuarios)))
+
+        toma_id = cursor.lastrowid
+
+        # Por cada detalle calcular diferencia vs teórico y registrar
+        for detalle in toma.detalles:
+            cursor.execute("""
+                SELECT IFNULL(SUM(i.cantidad), 0) AS cantidad_teorica, p.costo
+                FROM inventario i
+                JOIN productos p ON p.id = i.producto_id
+                WHERE i.producto_id = %s
+            """, (detalle.producto_id,))
+            row = cursor.fetchone() or {}
+            cantidad_teorica = row.get("cantidad_teorica", 0)
+            costo = row.get("costo", 0.0)
+
+            cursor.execute("""
+                INSERT INTO diferencias_inventario (
+                    toma_id, producto_id, cantidad_encontrada, cantidad_teorica,
+                    diferencia_unidades, costo_unitario, diferencia_monetaria
+                )
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (
+                toma_id,
+                detalle.producto_id,
+                detalle.cantidad_encontrada,
+                cantidad_teorica,
+                detalle.cantidad_encontrada - cantidad_teorica,
+                costo,
+                costo * abs(detalle.cantidad_encontrada - cantidad_teorica)
+            ))
+
+        conn.commit()
+        return {"mensaje": "Toma física registrada con éxito"}
+    except mysql.connector.Error as err:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=f"Error en la base de datos: {err}")
+    finally:
+        cursor.close()
+        conn.close()
