@@ -1,0 +1,363 @@
+/* ================================
+   Windows 11 – Light Theme (Default)
+   ================================ */
+:root {
+  --bg: #f5f7fb;            /* fondo general claro */
+  --bg-grad-1: #ffffff;     /* gradiente sutil */
+  --bg-grad-2: #eef2f8;
+
+  --surface: #ffffff;       /* superficies (cards/navbar) */
+  --surface-2: #fbfdff;
+
+  --text: #111827;          /* texto principal (gris muy oscuro) */
+  --muted: #6b7280;         /* texto secundario */
+  --border: rgba(15, 23, 42, 0.12); /* borde sutil */
+
+  --accent: #2563eb;        /* azul moderno */
+  --accent-weak: color-mix(in srgb, var(--accent) 10%, transparent);
+
+  --shadow: 0 10px 30px rgba(16, 24, 40, 0.08);
+  --shadow-soft: 0 6px 18px rgba(16, 24, 40, 0.06);
+
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
+
+  --input-bg: #ffffff;
+}
+
+/* ================================
+   Reset / Base
+   ================================ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  background:
+    radial-gradient(1200px 800px at 80% -10%, var(--bg-grad-2), transparent 60%),
+    radial-gradient(900px 600px at -10% 20%, var(--bg-grad-1), transparent 55%),
+    var(--bg);
+  font: 400 15px/1.55 system-ui, -apple-system, "Segoe UI Variable", "Segoe UI",
+        Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+        "Segoe UI Emoji", "Segoe UI Symbol";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+img, svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* ================================
+   Layout helpers
+   ================================ */
+.container {
+  width: 100%;
+  max-width: 1200px;
+  padding: 0 16px;
+  margin: 0 auto;
+}
+
+.page {
+  padding: 32px 0 48px;
+}
+
+/* ================================
+   Navbar
+   ================================ */
+.navbar{
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 10px rgba(16, 24, 40, 0.04);
+}
+
+.navbar__inner{
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.brand{
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.navlinks{
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navlink{
+  color: var(--text);
+  text-decoration: none;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  line-height: 1;
+}
+
+.navlink--active{
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+}
+
+/* ================================
+   Cards (contenedores)
+   ================================ */
+.card{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  overflow: hidden;
+}
+
+.card + .card{
+  margin-top: 18px;
+}
+
+.card__header{
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 98%, #f8fafc 2%);
+}
+
+.card__title{
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+
+.card__subtitle{
+  margin: 0;
+  color: var(--muted);
+  font-size: .9rem;
+}
+
+.card__body{
+  padding: 14px 20px 18px;
+}
+
+/* ================================
+   Tables
+   ================================ */
+.table{
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.table thead th{
+  text-align: left;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: #f8fafc;
+}
+
+.table tbody td{
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.table tbody tr:last-child td{
+  border-bottom: none;
+}
+
+.table__empty{
+  padding: 18px 14px;
+  color: var(--muted);
+}
+
+/* ================================
+   Buttons
+   ================================ */
+.btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 90%, #eef2f8 10%);
+  box-shadow: 0 1px 0 rgba(16, 24, 40, 0.04);
+}
+
+.btn:hover{
+  background: color-mix(in srgb, var(--surface) 80%, #e7edf8 20%);
+}
+
+.btn.primary{
+  background: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 70%, black 30%);
+  color: #fff;
+}
+
+.btn.primary:hover{
+  background: color-mix(in srgb, var(--accent) 88%, black 12%);
+}
+
+.btn.ghost{
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+.btn.ghost:hover{
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-weak);
+}
+
+/* ================================
+   Inputs
+   ================================ */
+.input,
+input[type="text"],
+input[type="password"],
+select,
+textarea{
+  width: 100%;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  outline: none;
+  box-shadow: 0 1px 0 rgba(16, 24, 40, 0.03) inset;
+}
+
+.input:focus,
+input[type="text"]:focus,
+input[type="password"]:focus,
+select:focus,
+textarea:focus{
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-weak);
+}
+
+/* ================================
+   Small helpers
+   ================================ */
+.h1, h1{ font-size: 2rem; margin: 0 0 12px; }
+.h2, h2{ font-size: 1.35rem; margin: 0 0 10px; }
+.h3, h3{ font-size: 1.1rem; margin: 0 0 8px; }
+
+.muted{ color: var(--muted); }
+
+.grid{
+  display: grid;
+  gap: 16px;
+}
+
+.grid--2{
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 900px){
+  .grid--2{ grid-template-columns: 1fr; }
+}
+
+/* Chips/Badges */
+.chip{
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: color-mix(in srgb, #f2f6ff 40%, var(--surface) 60%);
+  font-size: .85rem;
+}
+
+/* Skeleton (placeholder de carga) */
+.skeleton{
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg,
+      rgba(0,0,0,0.05) 25%,
+      rgba(0,0,0,0.12) 37%,
+      rgba(0,0,0,0.05) 63%
+    ) #eaeef7;
+  background-size: 400% 100%;
+  animation: shimmer 1.2s infinite;
+}
+
+@keyframes shimmer{
+  0%{ background-position: 100% 0; }
+  100%{ background-position: 0 0; }
+}
+
+/* Tablas dentro de .card con padding uniforme */
+.card .table{
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  border-radius: var(--radius-sm);
+}
+
+/* Títulos de página */
+.page .title{
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  margin: 0 0 10px;
+}
+
+/* ==========================================================
+   (Opcional) Soporte automático de modo oscuro del sistema.
+   Si no lo deseas, puedes borrar este bloque.
+   ========================================================== */
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg: #0f172a;
+    --bg-grad-1: #0b1324;
+    --bg-grad-2: #0e1423;
+    --surface: #101826;
+    --surface-2: #0f192a;
+    --text: #e5e7eb;
+    --muted: #94a3b8;
+    --border: rgba(148, 163, 184, 0.2);
+    --accent: #3b82f6;
+    --accent-weak: color-mix(in srgb, var(--accent) 10%, transparent);
+    --shadow: 0 8px 26px rgba(0, 0, 0, 0.35);
+    --shadow-soft: 0 6px 18px rgba(3, 7, 18, 0.35);
+    --input-bg: #0c1322;
+  }
+}

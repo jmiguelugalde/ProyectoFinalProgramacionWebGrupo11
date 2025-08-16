@@ -1,49 +1,50 @@
-import { Link, useNavigate } from "react-router-dom";
+// frontend/src/components/Navbar.tsx
+import React from "react";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../routes/AuthContext";
 
-export default function Navbar() {
-  const { token, logout } = useAuth();
+const Navbar: React.FC = () => {
+  const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
-  return (
-    <header
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: "12px 20px",
-        background: "#111827",
-        color: "white",
-      }}
-    >
-      <strong>Punto de Venta</strong>
+  const onLogout = () => {
+    try {
+      logout?.();
+    } finally {
+      navigate("/login", { replace: true });
+    }
+  };
 
-      {token ? (
-        <nav style={{ display: "flex", gap: 16 }}>
-          <Link to="/" style={{ color: "white" }}>Dashboard</Link>
-          <Link to="/productos" style={{ color: "white" }}>Productos</Link>
-          <Link to="/ventas" style={{ color: "white" }}>Ventas</Link>
-          <Link to="/cobros" style={{ color: "white" }}>Cobros</Link>
-          <button
-            onClick={() => {
-              logout();
-              navigate("/login");
-            }}
-            style={{
-              background: "#ef4444",
-              color: "white",
-              border: 0,
-              padding: "6px 10px",
-              borderRadius: 6,
-              cursor: "pointer",
-            }}
-          >
-            Salir
-          </button>
+  // Clase activa para NavLink
+  const linkClass = ({ isActive }: { isActive: boolean }) =>
+    `navlink ${isActive ? "navlink--active" : ""}`;
+
+  return (
+    <header className="navbar" role="navigation" aria-label="Main">
+      <div className="container navbar__inner">
+        <Link to="/" className="brand">Punto de Venta</Link>
+
+        <nav className="navlinks">
+          {isAuthenticated && (
+            <>
+              <NavLink to="/" end className={linkClass}>Dashboard</NavLink>
+              <NavLink to="/productos" className={linkClass}>Productos</NavLink>
+              <NavLink to="/ventas" className={linkClass}>Ventas</NavLink>
+              <NavLink to="/cobros" className={linkClass}>Cobros</NavLink>
+            </>
+          )}
+
+          {!isAuthenticated ? (
+            <NavLink to="/login" className="btn ghost">Login</NavLink>
+          ) : (
+            <button type="button" className="btn ghost" onClick={onLogout}>
+              Cerrar sesión
+            </button>
+          )}
         </nav>
-      ) : (
-        <Link to="/login" style={{ color: "white" }}>Login</Link>
-      )}
+      </div>
     </header>
   );
-}
+};
+
+export default Navbar;
