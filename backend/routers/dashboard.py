@@ -61,7 +61,7 @@ def productos_mas_vendidos(_=Depends(contador_required)):
             SELECT p.id AS producto_id, p.descripcion, 
                    COALESCE(SUM(s.cantidad), 0) AS unidades_vendidas, 
                    COALESCE(SUM(s.total), 0) AS total_recaudado
-            FROM sales s
+            FROM ventas s
             JOIN products p ON s.producto_id = p.id
             GROUP BY p.id, p.descripcion
             ORDER BY unidades_vendidas DESC
@@ -92,7 +92,7 @@ def pronostico_ventas(_=Depends(contador_required)):
         cursor.execute("""
             SELECT p.id AS producto_id, p.descripcion,
                    ROUND(AVG(s.cantidad), 0) AS unidades_estimadas
-            FROM sales s
+            FROM ventas s
             JOIN products p ON s.producto_id = p.id
             GROUP BY p.id, p.descripcion
         """)

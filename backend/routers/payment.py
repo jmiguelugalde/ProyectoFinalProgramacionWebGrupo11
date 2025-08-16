@@ -49,7 +49,7 @@ def listar_cuentas_pendientes(_=Depends(contador_required)):
     try:
         cursor.execute("""
             SELECT usuario, COALESCE(SUM(total), 0) AS total_pendiente
-            FROM sales
+            FROM ventas
             GROUP BY usuario
             HAVING total_pendiente > 0
         """)
@@ -71,7 +71,7 @@ def aplicar_pago(data: Pago, _=Depends(contador_required)):
     cursor = conn.cursor(dictionary=True)
     try:
         cursor.execute(
-            "SELECT COALESCE(SUM(total), 0) AS deuda FROM sales WHERE usuario = %s",
+            "SELECT COALESCE(SUM(total), 0) AS deuda FROM ventas WHERE usuario = %s",
             (data.usuario,)
         )
         row = cast(Optional[Dict[str, Any]], cursor.fetchone())
@@ -86,7 +86,7 @@ def aplicar_pago(data: Pago, _=Depends(contador_required)):
         if monto < deuda:
             raise HTTPException(status_code=400, detail="El monto no cubre la deuda total.")
 
-        cursor.execute("DELETE FROM sales WHERE usuario = %s", (data.usuario,))
+        cursor.execute("DELETE FROM ventas WHERE usuario = %s", (data.usuario,))
         conn.commit()
         return {"mensaje": f"Cuenta de {data.usuario} saldada correctamente."}
     finally:

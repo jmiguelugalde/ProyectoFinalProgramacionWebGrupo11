@@ -8,7 +8,7 @@ import mysql.connector
 from mysql.connector import Error
 from backend.routers import cobros
 
-from backend.routers import auth, products, inventory, sales, audit, payment, dashboard
+from backend.routers import auth, products, inventory, ventas, audit, payment, dashboard
 
 # Cargar variables de entorno (.env o variables del sistema)
 load_dotenv()
@@ -60,7 +60,7 @@ def startup_db_check():
 app.include_router(auth.router)
 app.include_router(products.router)
 app.include_router(inventory.router)
-app.include_router(sales.router)
+app.include_router(ventas.router)
 app.include_router(audit.router)
 app.include_router(payment.router)
 app.include_router(dashboard.router)
