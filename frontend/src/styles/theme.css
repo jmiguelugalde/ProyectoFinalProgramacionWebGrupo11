@@ -1,0 +1,171 @@
+/* Windows 11-ish theme (Fluent / Mica) */
+
+:root {
+  /* Palette */
+  --bg: #0f1115;
+  --bg-2: #101317;
+  --panel: rgba(255, 255, 255, 0.06);
+  --panel-strong: rgba(255, 255, 255, 0.08);
+  --border: rgba(255, 255, 255, 0.10);
+  --divider: rgba(255, 255, 255, 0.08);
+  --text: #e8e8ea;
+  --muted: #a6afbe;
+  --accent: #3a7afe; /* Windows 11 default accent-ish */
+
+  --radius: 14px;
+  --shadow-1: 0 2px 8px rgba(0,0,0,.25);
+  --shadow-2: 0 12px 32px rgba(0,0,0,.35);
+
+  --font: "Segoe UI Variable", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+}
+
+/* ---------- Base ---------- */
+* { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.45;
+
+  /* Mica-like background */
+  background:
+    radial-gradient(1100px 700px at 15% -10%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 60%),
+    radial-gradient(900px 600px at 90% 110%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 60%),
+    linear-gradient(180deg, var(--bg), var(--bg-2));
+}
+
+/* Gentle text rendering */
+h1,h2,h3 { margin: 0 0 10px; font-weight: 700; letter-spacing: .2px; }
+p { margin: 0 0 12px; color: var(--muted); }
+
+/* ---------- Layout helpers ---------- */
+.container {
+  max-width: 1200px;
+  margin: 28px auto;
+  padding: 0 20px;
+}
+
+/* Top app bar (acrylic) */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  background: color-mix(in srgb, var(--panel) 75%, transparent);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-1);
+}
+
+.appbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 56px;
+  padding: 10px 20px;
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: .3px;
+}
+
+.spacer { flex: 1; }
+
+.link,
+button.link {
+  color: var(--text);
+  text-decoration: none;
+  opacity: .9;
+}
+.link:hover,
+button.link:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* ---------- Cards / Panels ---------- */
+.card {
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow-1);
+}
+
+.card:hover {
+  border-color: color-mix(in srgb, var(--accent) 18%, var(--border));
+}
+
+/* Grid helpers */
+.grid {
+  display: grid;
+  gap: 16px;
+}
+.grid-2 {
+  grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 940px) {
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+/* ---------- Table (compact, clean) ---------- */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: calc(var(--radius) - 4px);
+  border: 1px solid var(--divider);
+}
+.table th, .table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--divider);
+  text-align: left;
+}
+.table thead th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: .92rem;
+  background: color-mix(in srgb, var(--panel-strong) 90%, transparent);
+}
+.table tbody tr:hover {
+  background: color-mix(in srgb, var(--panel-strong) 60%, transparent);
+}
+
+/* ---------- Buttons ---------- */
+.btn {
+  appearance: none;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: .15s ease;
+  box-shadow: 0 1px 0 rgba(255,255,255,.06) inset;
+}
+.btn:hover {
+  border-color: color-mix(in srgb, var(--accent) 20%, var(--border));
+}
+.btn.primary {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/* ---------- Chips / Badges ---------- */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+  font-size: .85rem;
+  color: var(--muted);
+}

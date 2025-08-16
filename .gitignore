@@ -1,33 +1,11 @@
-# --- Global ---
+﻿node_modules/
+dist/
+.vite/
 *.log
-.DS_Store
-Thumbs.db
+__pycache__/
+*.pyc
+.venv/
+.env
+backend/.env
 .vscode/
 .idea/
-
-# --- Python / FastAPI ---
-__pycache__/
-*.py[cod]
-*.egg-info/
-.venv/
-venv/
-env/
-backend/__pycache__/
-backend/.env
-*.sqlite3
-*.db
-
-# --- Node / Vite ---
-node_modules/
-frontend/node_modules/
-dist/
-frontend/dist/
-**/.vite/
-**/.turbo/
-
-# --- Env files ---
-.env
-frontend/.env
-
-# --- Docker ---
-docker-data/
