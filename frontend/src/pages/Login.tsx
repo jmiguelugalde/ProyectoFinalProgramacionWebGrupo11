@@ -13,8 +13,8 @@ export default function LoginPage() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -23,7 +23,6 @@ export default function LoginPage() {
 
     try {
       const res = await login(username, password);
-
       const token =
         (res as any)?.access_token ??
         (res as any)?.token ??
@@ -31,17 +30,15 @@ export default function LoginPage() {
 
       if (!token) throw new Error("Respuesta inesperada del servidor (sin token).");
 
-      // Persistimos y configuramos para próximas llamadas
       localStorage.setItem("token", token);
       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
-      // Guardamos sesión (si el contexto lo usa)
+      // Guarda sesión (Session: { token: string | null; user?: { username: string } | null })
       setSession?.({
         token,
-        user: { username },
+        user: (res as any)?.user ?? { username },
       });
 
-      // Redirige al dashboard
       navigate("/", { replace: true });
     } catch (err: unknown) {
       let msg = "Error al iniciar sesión";
@@ -61,33 +58,34 @@ export default function LoginPage() {
   }
 
   return (
-    <div
-      className="container"
-      style={{ minHeight: "70vh", display: "grid", placeItems: "center" }}
-    >
-      <div className="card" style={{ width: "100%", maxWidth: 420 }}>
-        <h1 style={{ marginBottom: 6 }}>Iniciar sesión</h1>
-        <p>Usa tu usuario y contraseña.</p>
+    <div className="login-shell">
+      <div className="login-card">
+        {/* Columna: formulario */}
+        <div className="login-form-col">
+          <h1 className="login-title">Iniciar sesión</h1>
+          <p className="muted">Usa tu usuario y contraseña.</p>
 
-        <form onSubmit={onSubmit} className="form-row" style={{ marginTop: 14 }}>
-          <input
-            className="input"
-            placeholder="Usuario"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            autoComplete="username"
-            autoFocus
-          />
-          <input
-            className="input"
-            placeholder="Contraseña"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-          />
+          {error && <div className="alert error">{error}</div>}
 
-          <div className="actions" style={{ marginTop: 4 }}>
+          <form onSubmit={onSubmit} className="login-form">
+            <label htmlFor="username">Usuario</label>
+            <input
+              id="username"
+              placeholder="Usuario"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoFocus
+            />
+
+            <label htmlFor="password">Contraseña</label>
+            <input
+              id="password"
+              type="password"
+              placeholder="Contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+
             <button
               type="submit"
               className="btn primary"
@@ -95,14 +93,20 @@ export default function LoginPage() {
             >
               {loading ? "Entrando..." : "Entrar"}
             </button>
-          </div>
-        </form>
+          </form>
+        </div>
 
-        {error && (
-          <p style={{ color: "crimson", marginTop: 12, whiteSpace: "pre-wrap" }}>
-            {error}
-          </p>
-        )}
+        {/* Columna: imagen/hero */}
+        <div
+          className="login-hero-col"
+          style={{ backgroundImage: "url(/img/login-hero.jpg)" }}
+          aria-hidden
+        >
+          <div className="login-hero-overlay">
+            <h2>Punto de Venta</h2>
+            <p>Gestiona productos, ventas y cobros de forma rápida.</p>
+          </div>
+        </div>
       </div>
     </div>
   );

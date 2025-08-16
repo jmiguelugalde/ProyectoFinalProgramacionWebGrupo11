@@ -1,43 +1,76 @@
-// frontend/src/components/Navbar.tsx
 import React from "react";
-import { NavLink, Link, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../routes/AuthContext";
 
-const Navbar: React.FC = () => {
+export default function Navbar() {
   const { isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
-  const onLogout = () => {
-    try {
-      logout?.();
-    } finally {
-      navigate("/login", { replace: true });
-    }
+  const handleLogout = () => {
+    logout();
+    navigate("/login", { replace: true });
   };
 
-  // Clase activa para NavLink
-  const linkClass = ({ isActive }: { isActive: boolean }) =>
-    `navlink ${isActive ? "navlink--active" : ""}`;
+  const linkStyle: React.CSSProperties = {
+    color: "var(--text)",
+    textDecoration: "none",
+    padding: "8px 10px",
+    borderRadius: 8,
+    fontWeight: 600,
+  };
+  const activeStyle: React.CSSProperties = {
+    background: "rgba(37, 99, 235, .12)",
+  };
 
   return (
-    <header className="navbar" role="navigation" aria-label="Main">
-      <div className="container navbar__inner">
-        <Link to="/" className="brand">Punto de Venta</Link>
+    <header className="navbar">
+      <div
+        className="container"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
+        <div style={{ fontWeight: 800 }}>Punto de Venta</div>
 
-        <nav className="navlinks">
+        <nav style={{ display: "flex", gap: 6, alignItems: "center" }}>
           {isAuthenticated && (
             <>
-              <NavLink to="/" end className={linkClass}>Dashboard</NavLink>
-              <NavLink to="/productos" className={linkClass}>Productos</NavLink>
-              <NavLink to="/ventas" className={linkClass}>Ventas</NavLink>
-              <NavLink to="/cobros" className={linkClass}>Cobros</NavLink>
+              <NavLink
+                to="/"
+                style={({ isActive }) => ({ ...linkStyle, ...(isActive ? activeStyle : {}) })}
+              >
+                Dashboard
+              </NavLink>
+              <NavLink
+                to="/productos"
+                style={({ isActive }) => ({ ...linkStyle, ...(isActive ? activeStyle : {}) })}
+              >
+                Productos
+              </NavLink>
+              <NavLink
+                to="/ventas"
+                style={({ isActive }) => ({ ...linkStyle, ...(isActive ? activeStyle : {}) })}
+              >
+                Ventas
+              </NavLink>
+              <NavLink
+                to="/cobros"
+                style={({ isActive }) => ({ ...linkStyle, ...(isActive ? activeStyle : {}) })}
+              >
+                Cobros
+              </NavLink>
             </>
           )}
 
           {!isAuthenticated ? (
-            <NavLink to="/login" className="btn ghost">Login</NavLink>
+            <NavLink to="/login" className="btn ghost">
+              Login
+            </NavLink>
           ) : (
-            <button type="button" className="btn ghost" onClick={onLogout}>
+            <button className="btn ghost" onClick={handleLogout}>
               Cerrar sesión
             </button>
           )}
@@ -45,6 +78,4 @@ const Navbar: React.FC = () => {
       </div>
     </header>
   );
-};
-
-export default Navbar;
+}

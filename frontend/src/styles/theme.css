@@ -169,3 +169,27 @@ button.link:hover {
   font-size: .85rem;
   color: var(--muted);
 }
+
+/* ===== Forms / Inputs (Windows 11-ish) ===== */
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  color: var(--text);
+  outline: none;
+  transition: .15s ease;
+}
+.input::placeholder {
+  color: var(--muted);
+  opacity: .75;
+}
+.input:focus {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* Helpers para formularios */
+.form-row { display: grid; gap: 12px; }
+.actions   { display: flex; gap: 8px; align-items: center; }

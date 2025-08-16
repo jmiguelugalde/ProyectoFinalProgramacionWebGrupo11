@@ -340,10 +340,7 @@ textarea:focus{
   margin: 0 0 10px;
 }
 
-/* ==========================================================
-   (Opcional) Soporte automático de modo oscuro del sistema.
-   Si no lo deseas, puedes borrar este bloque.
-   ========================================================== */
+
 @media (prefers-color-scheme: dark){
   :root{
     --bg: #0f172a;
@@ -361,3 +358,327 @@ textarea:focus{
     --input-bg: #0c1322;
   }
 }
+
+/* ===== LOGIN ===== */
+
+.login-shell {
+  min-height: calc(100dvh - 64px); /* asumiendo un header aprox. 64px */
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+  background:
+    radial-gradient(1200px 800px at 15% 10%, rgba(25, 111, 255, 0.08), transparent 60%),
+    radial-gradient(900px 700px at 90% 30%, rgba(25, 111, 255, 0.06), transparent 65%),
+    var(--bg, #f5f7fb);
+}
+
+.login-card {
+  width: min(1024px, 100%);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #fff;
+  border: 1px solid var(--surface, #eef1f7);
+  border-radius: 20px;
+  box-shadow: var(--elevation-3, 0 10px 30px rgba(0,0,0,0.06));
+  overflow: hidden;
+}
+
+@media (max-width: 900px) {
+  .login-card { grid-template-columns: 1fr; }
+  .login-hero-col { display: none; }
+}
+
+.login-form-col {
+  padding: 32px 28px 28px 28px;
+}
+
+.login-title {
+  margin: 0 0 8px 0;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text-strong, #0f1a2a);
+}
+
+.muted {
+  color: var(--muted, #667085);
+  margin: 0 0 18px 0;
+}
+
+.login-form {
+  display: grid;
+  gap: 10px;
+}
+
+.login-form label {
+  font-size: 0.85rem;
+  color: var(--muted, #667085);
+  margin-top: 6px;
+}
+
+.login-form input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  outline: none;
+  background: #fff;
+  transition: 140ms border, 140ms box-shadow, 140ms background-color;
+}
+
+.login-form input:focus {
+  border-color: var(--accent, #2563eb);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent, #2563eb) 20%, transparent);
+}
+
+/* Botones (reutiliza tu tema; refuerzo aquí por si acaso) */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--surface, #eef1f7);
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 600;
+  background: #fff;
+  cursor: pointer;
+  transition: 140ms transform, 140ms box-shadow, 140ms background, 140ms border-color;
+}
+
+.btn:hover { transform: translateY(-1px); }
+
+.btn.primary {
+  background: var(--accent, #2563eb);
+  border-color: var(--accent, #2563eb);
+  color: #fff;
+}
+
+.btn.primary:hover {
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent, #2563eb) 35%, transparent);
+}
+
+.btn.primary:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Alertas */
+.alert {
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  border: 1px solid;
+}
+
+.alert.error {
+  background: #fff6f6;
+  color: #b42318;
+  border-color: #ffcbc7;
+}
+
+/* Columna de imagen/hero */
+.login-hero-col {
+  position: relative;
+  min-height: 420px;
+  background-size: cover;
+  background-position: center;
+}
+
+.login-hero-col::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      120deg,
+      rgba(0,0,0,0.38) 0%,
+      rgba(0,0,0,0.20) 35%,
+      rgba(0,0,0,0.10) 60%,
+      rgba(0,0,0,0.00) 100%
+    );
+}
+
+.login-hero-overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 28px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.35);
+}
+
+.login-hero-overlay h2 {
+  margin: 0 0 6px 0;
+  font-weight: 800;
+}
+
+.login-hero-overlay p {
+  margin: 0;
+  opacity: .9;
+}
+
+/* ===== HOTFIX LOGIN ===== */
+.login-shell{
+  min-height: calc(100vh - 64px);
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+  background:
+    radial-gradient(1200px 800px at 15% 10%, rgba(25,111,255,0.08), transparent 60%),
+    radial-gradient(900px 700px at 90% 30%, rgba(25,111,255,0.06), transparent 65%),
+    #f5f7fb;
+}
+
+.login-card{
+  width: min(1024px, 100%);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #fff;
+  border: 1px solid #eef1f7;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.06);
+  overflow: hidden;
+}
+
+@media (max-width: 900px){
+  .login-card{ grid-template-columns: 1fr; }
+  .login-hero-col{ display: none; }
+}
+
+.login-form-col{ padding: 32px 28px; }
+
+.login-title{
+  margin: 0 0 8px 0;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #0f1a2a;
+}
+
+.muted{ color:#667085; margin: 0 0 18px 0; }
+
+.login-form{
+  display: grid;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.login-form label{
+  display: block;            /* <- clave para que no quede en línea con el input */
+  font-size: .9rem;
+  color: #667085;
+  margin-bottom: 4px;
+}
+
+.login-form input{
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  outline: none;
+  background: #fff;
+  transition: 140ms border, 140ms box-shadow, 140ms background-color;
+}
+
+.login-form input:focus{
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37,99,235,.2);
+}
+
+.btn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #eef1f7;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-weight: 600;
+  background: #fff;
+  cursor: pointer;
+  transition: 140ms transform, 140ms box-shadow, 140ms background, 140ms border-color;
+}
+
+.btn:hover{ transform: translateY(-1px); }
+
+.btn.primary{
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #fff;
+}
+
+.btn.primary:hover{
+  box-shadow: 0 6px 18px rgba(37,99,235,.35);
+}
+
+.btn.primary:disabled{
+  opacity: .6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Columna de imagen */
+.login-hero-col{
+  position: relative;
+  min-height: 420px;
+  background-size: cover;
+  background-position: center;
+}
+
+.login-hero-col::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(0,0,0,.38) 0%,
+    rgba(0,0,0,.20) 35%,
+    rgba(0,0,0,.10) 60%,
+    rgba(0,0,0,0) 100%
+  );
+}
+
+.login-hero-overlay{
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 28px;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,.35);
+}
+
+.login-hero-overlay h2{
+  margin: 0 0 6px 0;
+  font-weight: 800;
+}
+
+.login-hero-overlay p{ margin: 0; opacity: .9; }
+
+/* Fuerza pila vertical en Productos */
+.stack {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+/* Formulario más estrecho y legible */
+.card--form {
+  width: 100%;
+  max-width: 760px; /* ajusta a gusto */
+}
+
+/* La tabla ocupa el ancho disponible */
+.card--table {
+  width: 100%;
+}
+
+/* ===== Productos: forzar pila vertical (form arriba, tabla abajo) ===== */
+.page-productos .grid--2 {
+  grid-template-columns: 1fr !important; /* anula el layout de 2 columnas */
+}
+
+.page-productos .card--form {
+  width: 100%;
+  max-width: 760px;
+}
+
+.page-productos .card--table {
+  width: 100%;
+}
+

@@ -1,56 +1,69 @@
-// frontend/src/routes/AuthContext.tsx
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import api from "../services/api";
 
-type Session = { token: string | null; user?: { username: string } | null };
+export type Session = {
+  token: string | null;
+  user?: { username: string } | null;
+};
 
-type Ctx = {
+type AuthContextType = {
   session: Session;
-  setSession: (patch: Partial<Session>) => void;
+  isAuthenticated: boolean;
+  setSession: (s: Session) => void;
+  login: (token: string, user?: { username: string }) => void;
   logout: () => void;
 };
 
-const Ctx = createContext<Ctx | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  // Carga inicial desde localStorage
-  const storedToken = localStorage.getItem("token");
-  const storedUser = (() => {
-    try {
-      const raw = localStorage.getItem("user");
-      return raw ? (JSON.parse(raw) as { username: string }) : null;
-    } catch {
-      return null;
-    }
-  })();
-
-  const [session, setState] = useState<Session>({
-    token: storedToken,
-    user: storedUser,
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [session, setSession] = useState<Session>(() => {
+    const token = localStorage.getItem("token");
+    const username = localStorage.getItem("username") || "";
+    return { token, user: token ? { username } : null };
   });
 
-  // Persiste cambios
+  const isAuthenticated = !!session.token;
+
   useEffect(() => {
-    if (session.token) localStorage.setItem("token", session.token);
-    else localStorage.removeItem("token");
+    if (session.token) {
+      api.defaults.headers.common["Authorization"] = `Bearer ${session.token}`;
+      localStorage.setItem("token", session.token);
+      if (session.user?.username) {
+        localStorage.setItem("username", session.user.username);
+      }
+    } else {
+      delete api.defaults.headers.common["Authorization"];
+      localStorage.removeItem("token");
+      localStorage.removeItem("username");
+    }
+  }, [session]);
 
-    if (session.user) localStorage.setItem("user", JSON.stringify(session.user));
-    else localStorage.removeItem("user");
-  }, [session.token, session.user]);
+  const login = (token: string, user?: { username: string }) => {
+    setSession({ token, user: user ?? null });
+  };
 
-  const setSession = (patch: Partial<Session>) =>
-    setState((s) => ({ ...s, ...patch }));
+  const logout = () => {
+    setSession({ token: null, user: null });
+  };
 
-  const logout = () => setState({ token: null, user: null });
-
-  return (
-    <Ctx.Provider value={{ session, setSession, logout }}>
-      {children}
-    </Ctx.Provider>
+  const value = useMemo<AuthContextType>(
+    () => ({ session, isAuthenticated, setSession, login, logout }),
+    [session, isAuthenticated]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() {
-  const v = useContext(Ctx);
-  if (!v) throw new Error("useAuth must be used within AuthProvider");
-  return v;
+export function useAuth(): AuthContextType {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used within <AuthProvider>");
+  return ctx;
 }

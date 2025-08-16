@@ -6,6 +6,7 @@ import os
 import logging
 import mysql.connector
 from mysql.connector import Error
+from backend.routers import cobros
 
 from backend.routers import auth, products, inventory, sales, audit, payment, dashboard
 
@@ -72,3 +73,5 @@ def read_root():
 @app.get("/health")
 def health():
     return {"ok": True}
+
+app.include_router(cobros.router)
