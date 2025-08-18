@@ -1,28 +1,51 @@
 import api from "./api";
 
+// -------------------------
+// Tipos
+// -------------------------
 export type SaleItemInput = {
   producto_id: number;
   cantidad: number;
 };
 
 export type CreateSalePayload = {
-  usuario: string; // cliente/usuario al que se registra la venta
-  items: SaleItemInput[];
+  producto_id: number;
+  cantidad: number;
+};
+
+export type SaleResponse = {
+  id: number;
+  usuario: string;
+  producto_id: number;
+  cantidad: number;
+  precio_unitario: number;
+  total: number;
+  fecha: string;
 };
 
 export type CreateSaleResponse = {
-  mensaje?: string;
-  venta_id?: number;
-  [k: string]: unknown;
+  mensaje: string;
+  venta_id: number;
 };
 
+// -------------------------
+// Endpoints
+// -------------------------
+
+// Crear una venta
 export async function createSale(payload: CreateSalePayload): Promise<CreateSaleResponse> {
-  const { data } = await api.post<CreateSaleResponse>("/ventas/", payload);
+  const { data } = await api.post<CreateSaleResponse>("/ventas/agregar", payload);
   return data;
 }
 
-// (Opcional) listar ventas si tienes endpoint GET /ventas/
-// export async function listSales() {
-//   const { data } = await api.get("/ventas/");
-//   return data as any[];
-// }
+// Listar mis ventas
+export async function listMySales(): Promise<SaleResponse[]> {
+  const { data } = await api.get<SaleResponse[]>("/ventas/mis-ventas");
+  return data;
+}
+
+// Eliminar una venta por ID
+export async function deleteSale(id: number): Promise<{ mensaje: string }> {
+  const { data } = await api.delete<{ mensaje: string }>(`/ventas/${id}`);
+  return data;
+}

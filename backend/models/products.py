@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from backend.models.product import ProductCreate, ProductUpdate, ProductOut
+from schemas import ProductCreate, ProductUpdate, ProductOut
 from backend.security import admin_required
 import mysql.connector
 import os
@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 router = APIRouter(prefix="/productos", tags=["productos"])
 
+# Conexión a la base de datos
 def get_db_connection():
     return mysql.connector.connect(
         host=os.getenv("DB_HOST"),
@@ -17,11 +18,13 @@ def get_db_connection():
         database=os.getenv("DB_NAME")
     )
 
+# Crear producto
 @router.post("/", response_model=dict)
 def crear_producto(producto: ProductCreate, _=Depends(admin_required)):
     conn = get_db_connection()
     cursor = conn.cursor()
-    cursor.execute("""INSERT INTO products 
+    cursor.execute("""
+        INSERT INTO products 
         (descripcion, marca, presentacion, codigo_barras, costo, margen_utilidad, precio_venta)
         VALUES (%s, %s, %s, %s, %s, %s, %s)
     """, (
@@ -37,6 +40,7 @@ def crear_producto(producto: ProductCreate, _=Depends(admin_required)):
     conn.close()
     return {"mensaje": "Producto creado correctamente"}
 
+# Listar productos
 @router.get("/", response_model=list[ProductOut])
 def listar_productos():
     conn = get_db_connection()
@@ -46,19 +50,28 @@ def listar_productos():
     conn.close()
     return productos
 
+# Actualizar producto
 @router.put("/{producto_id}", response_model=dict)
 def actualizar_producto(producto_id: int, datos: ProductUpdate, _=Depends(admin_required)):
     conn = get_db_connection()
     cursor = conn.cursor()
+
     campos = []
     valores = []
     for campo, valor in datos.dict(exclude_unset=True).items():
         campos.append(f"{campo} = %s")
         valores.append(valor)
+
     if not campos:
         raise HTTPException(status_code=400, detail="Ningún campo válido para actualizar")
+
     valores.append(producto_id)
     cursor.execute(f"UPDATE products SET {', '.join(campos)} WHERE id = %s", tuple(valores))
+
+    if cursor.rowcount == 0:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+
     conn.commit()
     conn.close()
     return {"mensaje": "Producto actualizado correctamente"}

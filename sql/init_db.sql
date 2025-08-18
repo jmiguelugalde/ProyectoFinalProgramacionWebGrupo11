@@ -1,7 +1,6 @@
 -- ============================================
 -- Reinicio completo del esquema
 -- ============================================
-
 DROP DATABASE IF EXISTS punto_venta;
 CREATE DATABASE punto_venta;
 USE punto_venta;
@@ -43,7 +42,7 @@ CREATE TABLE IF NOT EXISTS inventory_entries (
     cantidad INT NOT NULL,
     costo_unitario DECIMAL(10,2) NOT NULL,
     fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (producto_id) REFERENCES products(id)
+    FOREIGN KEY (producto_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
 -- ============================================
@@ -51,13 +50,14 @@ CREATE TABLE IF NOT EXISTS inventory_entries (
 -- ============================================
 CREATE TABLE IF NOT EXISTS ventas (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    usuario VARCHAR(50) NOT NULL,
+    usuario_id INT NOT NULL,
     producto_id INT NOT NULL,
     cantidad INT NOT NULL,
     precio_unitario DECIMAL(10,2) NOT NULL,
     total DECIMAL(10,2) NOT NULL,
     fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (producto_id) REFERENCES products(id)
+    FOREIGN KEY (producto_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (usuario_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 -- ============================================
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS ventas (
 CREATE TABLE IF NOT EXISTS ventas_hist (
     id INT AUTO_INCREMENT PRIMARY KEY,
     id_venta INT NOT NULL,
-    usuario VARCHAR(50) NOT NULL,
+    usuario_id INT NOT NULL,
     producto_id INT NOT NULL,
     cantidad INT NOT NULL,
     precio_unitario DECIMAL(10,2) NOT NULL,
@@ -74,7 +74,8 @@ CREATE TABLE IF NOT EXISTS ventas_hist (
     fecha DATETIME NOT NULL,
     fecha_liquidacion TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
     usuario_liquidacion VARCHAR(50) DEFAULT 'sistema',
-    FOREIGN KEY (producto_id) REFERENCES products(id)
+    FOREIGN KEY (producto_id) REFERENCES products(id),
+    FOREIGN KEY (usuario_id) REFERENCES users(id)
 );
 
 -- ============================================
@@ -86,15 +87,44 @@ AFTER DELETE ON ventas
 FOR EACH ROW
 BEGIN
     INSERT INTO ventas_hist (
-        id_venta, usuario, producto_id, cantidad,
+        id_venta, usuario_id, producto_id, cantidad,
         precio_unitario, total, fecha, fecha_liquidacion, usuario_liquidacion
     ) VALUES (
-        OLD.id, OLD.usuario, OLD.producto_id, OLD.cantidad,
+        OLD.id, OLD.usuario_id, OLD.producto_id, OLD.cantidad,
         OLD.precio_unitario, OLD.total, OLD.fecha,
         NOW(), USER()
     );
 END$$
 DELIMITER ;
+
+-- ============================================
+-- Cuentas por cobrar
+-- ============================================
+CREATE TABLE IF NOT EXISTS cuentas_por_cobrar (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    venta_id INT NOT NULL,
+    cliente_id INT NULL,
+    monto_total DECIMAL(12,2) NOT NULL,
+    saldo_pendiente DECIMAL(12,2) NOT NULL,
+    fecha_emision DATETIME DEFAULT CURRENT_TIMESTAMP,
+    fecha_vencimiento DATETIME NULL,
+    FOREIGN KEY (venta_id) REFERENCES ventas(id) ON DELETE CASCADE,
+    FOREIGN KEY (cliente_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- ============================================
+-- Cobros
+-- ============================================
+CREATE TABLE IF NOT EXISTS cobros (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cuenta_id INT NOT NULL,
+    monto DECIMAL(12,2) NOT NULL,
+    metodo_pago ENUM('efectivo','tarjeta','transferencia','otro') NOT NULL,
+    fecha_pago DATETIME DEFAULT CURRENT_TIMESTAMP,
+    usuario_id INT NULL,
+    FOREIGN KEY (cuenta_id) REFERENCES cuentas_por_cobrar(id) ON DELETE CASCADE,
+    FOREIGN KEY (usuario_id) REFERENCES users(id) ON DELETE SET NULL
+);
 
 -- ============================================
 -- Toma física (encabezado)
@@ -129,3 +159,5 @@ CREATE TABLE IF NOT EXISTS diferencias_inventario (
 -- ============================================
 CREATE INDEX idx_inventory_producto ON inventory_entries(producto_id);
 CREATE INDEX idx_diferencias_toma ON diferencias_inventario(toma_id);
+CREATE INDEX idx_ventas_usuario ON ventas(usuario_id);
+CREATE INDEX idx_ventas_producto ON ventas(producto_id);

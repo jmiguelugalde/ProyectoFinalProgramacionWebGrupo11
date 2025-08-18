@@ -1,27 +1,30 @@
+# backend/routers/ventas.py
+from fastapi import APIRouter, HTTPException, Depends
 from typing import Any, Dict, List, Optional, cast
 from decimal import Decimal
 from datetime import datetime
-
-from fastapi import APIRouter, HTTPException, Depends
-from backend.models.sale import SaleCreate, SaleOut
-from backend.security import cliente_required, TokenData
-import mysql.connector
 import os
+import mysql.connector
 from dotenv import load_dotenv
+from backend.schemas import SaleCreateBulk, SaleOut, TokenData
+from backend.security import cliente_required
 
+# Cargar variables de entorno
 load_dotenv()
+
 router = APIRouter(prefix="/ventas", tags=["ventas"])
 
+# ---------- Conexión a la base de datos ----------
 def get_db_connection():
     return mysql.connector.connect(
         host=os.getenv("DB_HOST"),
         port=os.getenv("DB_PORT"),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_NAME")
+        database=os.getenv("DB_NAME"),
     )
 
-# ---------- Helpers de casting seguros ----------
+# ---------- Helpers ----------
 def to_int(x: Any, default: int = 0) -> int:
     try:
         if x is None:
@@ -61,63 +64,70 @@ def to_float(x: Any, default: float = 0.0) -> float:
         return float(s)
     except Exception:
         return default
-# ------------------------------------------------
 
-@router.post("/agregar", response_model=dict)
-def agregar_venta(data: SaleCreate, current_user: TokenData = Depends(cliente_required)):
-    # Validaciones básicas
-    cantidad = to_int(data.cantidad)
-    if cantidad <= 0:
-        raise HTTPException(status_code=400, detail="La cantidad debe ser mayor a cero.")
+# ---------- Endpoints ----------
+@router.post("/", response_model=dict)
+def crear_venta(data: SaleCreateBulk, current_user: TokenData = Depends(cliente_required)):
+    if not data.items or len(data.items) == 0:
+        raise HTTPException(status_code=400, detail="Debe incluir al menos un producto en la venta.")
 
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     try:
-        # Traer precio y stock del producto
-        cursor.execute(
-            "SELECT precio_venta, stock FROM products WHERE id = %s",
-            (to_int(data.producto_id),)
-        )
-        producto = cast(Optional[Dict[str, Any]], cursor.fetchone())
-        if not producto:
-            raise HTTPException(status_code=404, detail="Producto no encontrado")
+        venta_ids: List[int] = []
+        for item in data.items:
+            cantidad = to_int(item.cantidad)
+            if cantidad <= 0:
+                raise HTTPException(status_code=400, detail="La cantidad debe ser mayor a cero.")
 
-        precio = to_float(producto.get("precio_venta"))
-        stock_actual = to_int(producto.get("stock"))
+            # Traer precio y stock del producto
+            cursor.execute(
+                "SELECT precio_venta, stock FROM products WHERE id = %s",
+                (to_int(item.producto_id),),
+            )
+            producto = cast(Optional[Dict[str, Any]], cursor.fetchone())
+            if not producto:
+                raise HTTPException(status_code=404, detail=f"Producto {item.producto_id} no encontrado")
 
-        if stock_actual < cantidad:
-            raise HTTPException(status_code=400, detail="Stock insuficiente para realizar la venta")
+            precio = to_float(producto.get("precio_venta"))
+            stock_actual = to_int(producto.get("stock"))
 
-        total = float(precio * cantidad)
+            if stock_actual < cantidad:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Stock insuficiente para producto {item.producto_id}"
+                )
 
-        # Actualizar stock (condicional)
-        cursor.execute(
-            "UPDATE products SET stock = stock - %s WHERE id = %s AND stock >= %s",
-            (cantidad, to_int(data.producto_id), cantidad)
-        )
-        if cursor.rowcount == 0:
-            # Otro proceso podría haber consumido el stock entre la lectura y la actualización
-            conn.rollback()
-            raise HTTPException(status_code=400, detail="Stock insuficiente para realizar la venta")
+            total = float(precio * cantidad)
 
-        # Insertar la venta
-        cursor.execute(
-            """
-            INSERT INTO sales (usuario, producto_id, cantidad, precio_unitario, total, fecha)
-            VALUES (%s, %s, %s, %s, %s, %s)
-            """,
-            (
-                str(current_user.username),
-                to_int(data.producto_id),
-                cantidad,
-                float(precio),
-                total,
-                datetime.now(),
-            ),
-        )
+            # Actualizar stock
+            cursor.execute(
+                "UPDATE products SET stock = stock - %s WHERE id = %s AND stock >= %s",
+                (cantidad, to_int(item.producto_id), cantidad),
+            )
+            if cursor.rowcount == 0:
+                conn.rollback()
+                raise HTTPException(status_code=400, detail="Stock insuficiente para realizar la venta")
+
+            # Insertar la venta
+            cursor.execute(
+                """
+                INSERT INTO sales (usuario, producto_id, cantidad, precio_unitario, total, fecha)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                (
+                    str(current_user.username),
+                    to_int(item.producto_id),
+                    cantidad,
+                    float(precio),
+                    total,
+                    datetime.now(),
+                ),
+            )
+            venta_ids.append(cursor.lastrowid)
 
         conn.commit()
-        return {"mensaje": "Venta registrada correctamente"}
+        return {"mensaje": "Venta registrada correctamente", "venta_id": venta_ids}
     except mysql.connector.Error as err:
         conn.rollback()
         raise HTTPException(status_code=500, detail=f"Error en la base de datos: {err}")
@@ -127,17 +137,17 @@ def agregar_venta(data: SaleCreate, current_user: TokenData = Depends(cliente_re
         finally:
             conn.close()
 
-@router.get("/mis-ventas", response_model=list[SaleOut])
+
+@router.get("/mis-ventas", response_model=List[SaleOut])
 def ver_mis_ventas(current_user: TokenData = Depends(cliente_required)):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     try:
         cursor.execute(
-            "SELECT * FROM sales WHERE usuario = %s",
-            (str(current_user.username),)
+            "SELECT * FROM sales WHERE usuario = %s ORDER BY fecha DESC",
+            (str(current_user.username),),
         )
         ventas = cast(List[Dict[str, Any]], cursor.fetchall() or [])
-        # (Opcional) normalizar tipos por si el modelo es estricto
         for v in ventas:
             v["producto_id"] = to_int(v.get("producto_id"))
             v["cantidad"] = to_int(v.get("cantidad"))
@@ -150,6 +160,7 @@ def ver_mis_ventas(current_user: TokenData = Depends(cliente_required)):
         finally:
             conn.close()
 
+
 @router.delete("/{venta_id}", response_model=dict)
 def eliminar_venta(venta_id: int, current_user: TokenData = Depends(cliente_required)):
     conn = get_db_connection()
@@ -157,7 +168,7 @@ def eliminar_venta(venta_id: int, current_user: TokenData = Depends(cliente_requ
     try:
         cursor.execute(
             "SELECT id, usuario, cantidad, producto_id FROM sales WHERE id = %s AND usuario = %s",
-            (to_int(venta_id), str(current_user.username))
+            (to_int(venta_id), str(current_user.username)),
         )
         venta = cast(Optional[Dict[str, Any]], cursor.fetchone())
         if not venta:
@@ -169,7 +180,7 @@ def eliminar_venta(venta_id: int, current_user: TokenData = Depends(cliente_requ
         cursor.execute("DELETE FROM sales WHERE id = %s", (to_int(venta_id),))
         cursor.execute(
             "UPDATE products SET stock = stock + %s WHERE id = %s",
-            (cantidad, producto_id)
+            (cantidad, producto_id),
         )
 
         conn.commit()

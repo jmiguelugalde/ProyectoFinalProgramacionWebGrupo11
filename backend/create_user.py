@@ -71,55 +71,54 @@ def detect_password_column(cols: Set[str]) -> str:
             return c
     raise RuntimeError(f"No encuentro columna de password en tabla users. Columnas: {cols}")
 
-def default_email_for(username: str) -> str:
-    return f"{username}@local.test"
+def default_email_for(nombre: str) -> str:
+    return f"{nombre}@local.test"
 
 def main():
     ap = argparse.ArgumentParser(description="Crea un usuario en la tabla 'users'.")
-    ap.add_argument("--username", required=True)
-    ap.add_argument("--password", required=True)
-    ap.add_argument("--role", default="cliente")
-    ap.add_argument("--email", required=False,
-                    help="Email del usuario (si la tabla lo exige y no se pasa, se usa username@local.test)")
+    ap.add_argument("--nombre", required=True, help="Nombre del usuario")
+    ap.add_argument("--password", required=True, help="Contraseña del usuario")
+    ap.add_argument("--rol", default="cliente", help="Rol (cliente/admin/contabilidad)")
+    ap.add_argument("--correo", required=False,
+                    help="Correo del usuario (si no se pasa, se usa nombre@local.test)")
     args = ap.parse_args()
 
     conn = get_db()
     cur = conn.cursor(dictionary=True)
     try:
-        # ¿ya existe por username?
-        cur.execute("SELECT id FROM users WHERE username=%s", (args.username,))
+        # ¿ya existe por nombre?
+        cur.execute("SELECT id FROM users WHERE nombre=%s", (args.nombre,))
         if cur.fetchone():
-            print(f"Usuario '{args.username}' ya existe.")
+            print(f"Usuario '{args.nombre}' ya existe.")
             return
 
         cols = get_users_columns(cur)
         passcol = detect_password_column(cols)
         hashed = get_password_hash(args.password)
 
-        # Si la tabla tiene 'email' y suele ser NOT NULL, prepáralo
-        email_to_use: Optional[str] = None
-        if "email" in cols:
-            email_to_use = args.email or default_email_for(args.username)
-            # (opcional) comprobar unicidad
+        # Si la tabla tiene 'correo'
+        correo_to_use: Optional[str] = None
+        if "correo" in cols:
+            correo_to_use = args.correo or default_email_for(args.nombre)
             try:
-                cur.execute("SELECT id FROM users WHERE email=%s", (email_to_use,))
+                cur.execute("SELECT id FROM users WHERE correo=%s", (correo_to_use,))
                 if cur.fetchone():
-                    print(f"Ya existe un usuario con email '{email_to_use}'. Cambia --email.")
+                    print(f"Ya existe un usuario con correo '{correo_to_use}'. Cambia --correo.")
                     return
             except Exception:
                 pass
 
         # Construir INSERT dinámico según columnas presentes
-        fields = ["username", passcol]
-        values: list[Any] = [args.username, hashed]
+        fields = ["nombre", passcol]
+        values: list[Any] = [args.nombre, hashed]
 
-        if "role" in cols:
-            fields.append("role")
-            values.append(args.role)
+        if "rol" in cols:
+            fields.append("rol")
+            values.append(args.rol)
 
-        if "email" in cols:
-            fields.append("email")
-            values.append(email_to_use)
+        if "correo" in cols:
+            fields.append("correo")
+            values.append(correo_to_use)
 
         placeholders = ", ".join(["%s"] * len(values))
         columns_sql = ", ".join(fields)
@@ -130,13 +129,13 @@ def main():
             conn.commit()
         except mysql.connector.errors.IntegrityError as e:
             if getattr(e, "errno", None) == 1062:
-                print(f"⚠ Violación de unicidad (username o email duplicado). Detalle: {e.msg}")
+                print(f"⚠ Violación de unicidad (nombre o correo duplicado). Detalle: {e.msg}")
                 return
             raise
 
-        rol_txt = f" (rol={args.role})" if "role" in cols else ""
-        email_txt = f", email={email_to_use}" if "email" in cols else ""
-        print(f"✔ Usuario creado: {args.username}{rol_txt}{email_txt}")
+        rol_txt = f" (rol={args.rol})" if "rol" in cols else ""
+        correo_txt = f", correo={correo_to_use}" if "correo" in cols else ""
+        print(f"✔ Usuario creado: {args.nombre}{rol_txt}{correo_txt}")
 
     finally:
         try:
@@ -146,7 +145,6 @@ def main():
         conn.close()
 
 if __name__ == "__main__":
-    # Asegura que 'backend' esté en sys.path si se ejecuta como script en local
     try:
         sys.path.append(str(Path(__file__).resolve().parents[1]))
     except Exception:

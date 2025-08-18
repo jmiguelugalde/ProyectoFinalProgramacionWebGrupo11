@@ -1,4 +1,3 @@
-# backend/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -6,20 +5,20 @@ import os
 import logging
 import mysql.connector
 from mysql.connector import Error
-from backend.routers import cobros
 
-from backend.routers import auth, products, inventory, ventas, audit, payment, dashboard
+# Importar lista de routers desde __init__.py
+from backend.routers import all_routers
 
-# Cargar variables de entorno (.env o variables del sistema)
+# ---- Cargar variables de entorno ----
 load_dotenv()
 
 app = FastAPI(title="Proyecto Punto de Venta - Grupo 11", version="0.1.0")
 
-# ---- CORS (habilitar frontend local) ----
-# Puedes sobreescribir con FRONTEND_URL o CORS_EXTRA_ORIGINS en el entorno
+# ---- Configuración de CORS ----
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 EXTRA_ORIGINS = os.getenv("CORS_EXTRA_ORIGINS", "")
 _origins = [o.strip() for o in (FRONTEND_URL + "," + EXTRA_ORIGINS).split(",") if o.strip()]
+
 if not _origins:
     _origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
@@ -33,7 +32,7 @@ app.add_middleware(
 
 logger = logging.getLogger("uvicorn")
 
-# ---- Verificar conexión a la base de datos al iniciar ----
+# ---- Verificación de conexión a la base de datos al iniciar ----
 @app.on_event("startup")
 def startup_db_check():
     try:
@@ -56,16 +55,11 @@ def startup_db_check():
     except Error as e:
         logger.error("❌ Error de conexión a MySQL: %s", e)
 
-# ---- Incluir routers ----
-app.include_router(auth.router)
-app.include_router(products.router)
-app.include_router(inventory.router)
-app.include_router(ventas.router)
-app.include_router(audit.router)
-app.include_router(payment.router)
-app.include_router(dashboard.router)
+# ---- Incluir routers automáticamente ----
+for router in all_routers:
+    app.include_router(router)
 
-# ---- Rutas base/health ----
+# ---- Endpoints base ----
 @app.get("/")
 def read_root():
     return {"mensaje": "Bienvenido al sistema Punto de Venta"}
@@ -73,5 +67,3 @@ def read_root():
 @app.get("/health")
 def health():
     return {"ok": True}
-
-app.include_router(cobros.router)

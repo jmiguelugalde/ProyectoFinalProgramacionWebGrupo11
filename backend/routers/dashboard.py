@@ -1,7 +1,8 @@
+# backend/routers/dashboard.py
 from typing import Any, Dict, List, cast
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from backend.models.dashboard import ProductoMasVendido, PronosticoDemanda
 from backend.security import contador_required
 import mysql.connector
@@ -12,13 +13,16 @@ load_dotenv()
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 def get_db_connection():
-    return mysql.connector.connect(
-        host=os.getenv("DB_HOST"),
-        port=os.getenv("DB_PORT"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_NAME")
-    )
+    try:
+        return mysql.connector.connect(
+            host=os.getenv("DB_HOST"),
+            port=os.getenv("DB_PORT"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=os.getenv("DB_NAME")
+        )
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"Error de conexión a la BD: {str(e)}")
 
 # --- Helpers para normalizar tipos numéricos ---
 def to_int(x: Any, default: int = 0) -> int:
@@ -68,21 +72,21 @@ def productos_mas_vendidos(_=Depends(contador_required)):
             LIMIT 10
         """)
         rows = cast(List[Dict[str, Any]], cursor.fetchall() or [])
-        # Normalizar tipos para cumplir el response_model
-        resultados: List[Dict[str, Any]] = []
-        for r in rows:
-            resultados.append({
+        resultados: List[Dict[str, Any]] = [
+            {
                 "producto_id": to_int(r.get("producto_id")),
                 "descripcion": str(r.get("descripcion") or ""),
                 "unidades_vendidas": to_int(r.get("unidades_vendidas")),
                 "total_recaudado": to_float(r.get("total_recaudado")),
-            })
+            }
+            for r in rows
+        ]
         return resultados
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"Error en consulta SQL: {str(e)}")
     finally:
-        try:
-            cursor.close()
-        finally:
-            conn.close()
+        cursor.close()
+        conn.close()
 
 @router.get("/pronostico", response_model=list[PronosticoDemanda])
 def pronostico_ventas(_=Depends(contador_required)):
@@ -97,18 +101,18 @@ def pronostico_ventas(_=Depends(contador_required)):
             GROUP BY p.id, p.descripcion
         """)
         rows = cast(List[Dict[str, Any]], cursor.fetchall() or [])
-        # Construir salida tipada y agregar "periodo"
-        datos: List[Dict[str, Any]] = []
-        for r in rows:
-            datos.append({
+        datos: List[Dict[str, Any]] = [
+            {
                 "producto_id": to_int(r.get("producto_id")),
                 "descripcion": str(r.get("descripcion") or ""),
                 "unidades_estimadas": to_int(r.get("unidades_estimadas")),
                 "periodo": "próximo mes",
-            })
+            }
+            for r in rows
+        ]
         return datos
+    except mysql.connector.Error as e:
+        raise HTTPException(status_code=500, detail=f"Error en consulta SQL: {str(e)}")
     finally:
-        try:
-            cursor.close()
-        finally:
-            conn.close()
+        cursor.close()
+        conn.close()

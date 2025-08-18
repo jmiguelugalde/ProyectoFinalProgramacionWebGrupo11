@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 from datetime import datetime
-from typing import Optional
 
 class SaleCreate(BaseModel):
     producto_id: int
@@ -14,3 +13,6 @@ class SaleOut(BaseModel):
     precio_unitario: float
     total: float
     fecha: datetime
+
+    class Config:
+        orm_mode = True

@@ -9,6 +9,7 @@ import os
 import mysql.connector
 from dotenv import load_dotenv
 
+# 🔹 Ajuste del import (asegurando ruta absoluta al decorador de seguridad)
 from backend.security import contador_required
 
 load_dotenv()
