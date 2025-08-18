@@ -78,29 +78,6 @@ CREATE TABLE IF NOT EXISTS ventas_hist (
 );
 
 -- ============================================
--- Auditoría de inventario (encabezado)
--- ============================================
-CREATE TABLE IF NOT EXISTS inventory_audits (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    fecha DATETIME NOT NULL,
-    usuarios TEXT NOT NULL
-);
-
--- ============================================
--- Detalle de auditoría de inventario
--- ============================================
-CREATE TABLE IF NOT EXISTS inventory_audit_details (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    audit_id INT NOT NULL,
-    producto_id INT NOT NULL,
-    cantidad_encontrada INT NOT NULL,
-    cantidad_teorica INT NOT NULL,
-    costo_unitario DECIMAL(10,2) NOT NULL,
-    FOREIGN KEY (audit_id) REFERENCES inventory_audits(id),
-    FOREIGN KEY (producto_id) REFERENCES products(id)
-);
-
--- ============================================
 -- Trigger: cuando se elimina una venta, se mueve a ventas_hist
 -- ============================================
 DELIMITER $$
@@ -118,3 +95,37 @@ BEGIN
     );
 END$$
 DELIMITER ;
+
+-- ============================================
+-- Toma física (encabezado)
+-- ============================================
+CREATE TABLE IF NOT EXISTS toma_fisica (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    usuario_id INT NULL,
+    fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    observaciones TEXT,
+    usuarios_presentes TEXT,
+    FOREIGN KEY (usuario_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+-- ============================================
+-- Diferencias de inventario (detalle)
+-- ============================================
+CREATE TABLE IF NOT EXISTS diferencias_inventario (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    toma_id INT NOT NULL,
+    producto_id INT NOT NULL,
+    cantidad_encontrada INT NOT NULL DEFAULT 0,
+    cantidad_teorica INT NOT NULL DEFAULT 0,
+    diferencia_unidades INT NOT NULL DEFAULT 0,
+    costo_unitario DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+    diferencia_monetaria DECIMAL(14,2) NOT NULL DEFAULT 0.00,
+    FOREIGN KEY (toma_id) REFERENCES toma_fisica(id) ON DELETE CASCADE,
+    FOREIGN KEY (producto_id) REFERENCES products(id) ON DELETE CASCADE
+);
+
+-- ============================================
+-- Índices recomendados
+-- ============================================
+CREATE INDEX idx_inventory_producto ON inventory_entries(producto_id);
+CREATE INDEX idx_diferencias_toma ON diferencias_inventario(toma_id);

@@ -2,6 +2,12 @@
 
 Aplicación web para administrar un punto de venta de una pulpería, desarrollada como proyecto final del curso de Programación Web.
 
+# Estudiantes
+
+- Jafet Rojas
+- Jose Ugalde
+- Oscar Umaña
+
 ## 🎯 Funcionalidades
 
 - Creación y gestión de usuarios con roles: cliente, contador y administrador
