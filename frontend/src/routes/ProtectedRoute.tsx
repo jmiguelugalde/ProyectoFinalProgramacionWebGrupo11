@@ -1,15 +1,29 @@
+// frontend/src/routes/ProtectedRoute.tsx
 import React from "react";
-import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "./AuthContext";
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-type Props = { children: React.ReactElement; roles?: string[] };
+// Roles válidos según backend
+type UserRole = "admin" | "contabilidad" | "cliente";
 
-export default function ProtectedRoute({ children }: Props) {
-  const { isAuthenticated } = useAuth();
-  const location = useLocation();
+interface ProtectedRouteProps {
+  roles: UserRole[];
+  children: React.ReactElement;
+}
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />;
+export default function ProtectedRoute({ roles, children }: ProtectedRouteProps) {
+  const { session } = useAuth();
+
+  // Si no hay sesión, redirigimos al login
+  if (!session || !session.token || !session.user) {
+    return <Navigate to="/login" replace />;
   }
+
+  // Verificamos que el rol del usuario esté en la lista de roles permitidos
+  if (!roles.includes(session.user.role as UserRole)) {
+    return <Navigate to="/" replace />;
+  }
+
+  // Si pasa validaciones, renderizamos el contenido
   return children;
 }

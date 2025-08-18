@@ -5,6 +5,7 @@ import os
 import logging
 import mysql.connector
 from mysql.connector import Error
+from backend.routers import users
 
 # Importar lista de routers desde __init__.py
 from backend.routers import all_routers

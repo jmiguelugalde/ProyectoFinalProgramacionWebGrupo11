@@ -1,9 +1,9 @@
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "../routes/AuthContext";
+import { useAuth } from "../context/AuthContext";
 
 export default function Navbar() {
-  const { isAuthenticated, logout } = useAuth();
+  const { token, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -18,9 +18,12 @@ export default function Navbar() {
     borderRadius: 8,
     fontWeight: 600,
   };
+
   const activeStyle: React.CSSProperties = {
     background: "rgba(37, 99, 235, .12)",
   };
+
+  const role = token?.role;
 
   return (
     <header className="navbar">
@@ -36,36 +39,53 @@ export default function Navbar() {
         <div style={{ fontWeight: 800 }}>Punto de Venta</div>
 
         <nav style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          {isAuthenticated && (
+          {token && (
             <>
               <NavLink
                 to="/"
-                style={({ isActive }) => ({ ...linkStyle, ...(isActive ? activeStyle : {}) })}
+                style={({ isActive }) => ({
+                  ...linkStyle,
+                  ...(isActive ? activeStyle : {}),
+                })}
               >
                 Dashboard
               </NavLink>
-              <NavLink
-                to="/productos"
-                style={({ isActive }) => ({ ...linkStyle, ...(isActive ? activeStyle : {}) })}
-              >
-                Productos
-              </NavLink>
-              <NavLink
-                to="/ventas"
-                style={({ isActive }) => ({ ...linkStyle, ...(isActive ? activeStyle : {}) })}
-              >
-                Ventas
-              </NavLink>
-              <NavLink
-                to="/cobros"
-                style={({ isActive }) => ({ ...linkStyle, ...(isActive ? activeStyle : {}) })}
-              >
-                Cobros
-              </NavLink>
+
+              {(role === "admin" || role === "contabilidad") && (
+                <>
+                  <NavLink
+                    to="/productos"
+                    style={({ isActive }) => ({
+                      ...linkStyle,
+                      ...(isActive ? activeStyle : {}),
+                    })}
+                  >
+                    Productos
+                  </NavLink>
+                  <NavLink
+                    to="/ventas"
+                    style={({ isActive }) => ({
+                      ...linkStyle,
+                      ...(isActive ? activeStyle : {}),
+                    })}
+                  >
+                    Ventas
+                  </NavLink>
+                  <NavLink
+                    to="/cobros"
+                    style={({ isActive }) => ({
+                      ...linkStyle,
+                      ...(isActive ? activeStyle : {}),
+                    })}
+                  >
+                    Cobros
+                  </NavLink>
+                </>
+              )}
             </>
           )}
 
-          {!isAuthenticated ? (
+          {!token ? (
             <NavLink to="/login" className="btn ghost">
               Login
             </NavLink>

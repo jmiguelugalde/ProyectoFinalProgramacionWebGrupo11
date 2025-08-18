@@ -13,17 +13,19 @@ import {
   type PeriodoCobro,
 } from "../services/cobros";
 import { quincenaActual, quincenaAnterior } from "../utils/quincena";
-import { useAuth } from "../routes/AuthContext";
 
 export default function CobrosPage() {
-  const { isAuthenticated } = useAuth();
   const [periodo, setPeriodo] = useState<Periodo>(quincenaActual());
   const [previewLoading, setPreviewLoading] = useState(false);
   const [genLoading, setGenLoading] = useState(false);
 
   const [resumen, setResumen] = useState<ResumenAsociado[]>([]);
   const [detalle, setDetalle] = useState<DetalleItem[]>([]);
-  const [kpis, setKpis] = useState<{ total: number; asociados: number; ventas: number }>({ total: 0, asociados: 0, ventas: 0 });
+  const [kpis, setKpis] = useState<{ total: number; asociados: number; ventas: number }>({
+    total: 0,
+    asociados: 0,
+    ventas: 0,
+  });
 
   const [periodos, setPeriodos] = useState<PeriodoCobro[]>([]);
   const [selPeriodo, setSelPeriodo] = useState<number | null>(null);
@@ -31,13 +33,14 @@ export default function CobrosPage() {
   const [histDetalle, setHistDetalle] = useState<DetalleItem[]>([]);
   const [histLoading, setHistLoading] = useState(false);
 
+  // Cargar períodos históricos
   useEffect(() => {
     (async () => {
       try {
         const data = await listarPeriodos();
         setPeriodos(data);
-      } catch {
-        // opcionalmente mostrar error
+      } catch (e) {
+        console.error("Error listando períodos", e);
       }
     })();
   }, []);
@@ -48,9 +51,13 @@ export default function CobrosPage() {
       const data = await previewCobros(periodo);
       setResumen(data.resumen);
       setDetalle(data.detalle);
-      setKpis({ total: data.total_periodo, asociados: data.total_asociados, ventas: data.total_ventas });
+      setKpis({
+        total: data.total_periodo,
+        asociados: data.total_asociados,
+        ventas: data.total_ventas,
+      });
     } catch (e) {
-      console.error(e);
+      console.error("Error preview cobros", e);
       alert("No fue posible calcular el preview de cobros.");
     } finally {
       setPreviewLoading(false);
@@ -63,12 +70,11 @@ export default function CobrosPage() {
     try {
       const data = await generarCobros(periodo);
       setSelPeriodo(data.periodo_id);
-      // refrescar histórico
       const list = await listarPeriodos();
       setPeriodos(list);
       alert("Período generado correctamente.");
     } catch (e) {
-      console.error(e);
+      console.error("Error generando período", e);
       alert("No fue posible generar el período.");
     } finally {
       setGenLoading(false);
@@ -82,7 +88,7 @@ export default function CobrosPage() {
       setHistResumen(r);
       setHistDetalle(d);
     } catch (e) {
-      console.error(e);
+      console.error("Error cargando período histórico", e);
       alert("No fue posible cargar el período.");
     } finally {
       setHistLoading(false);
@@ -100,7 +106,7 @@ export default function CobrosPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      console.error(e);
+      console.error("Error exportando CSV", e);
       alert("Error exportando CSV.");
     }
   }
@@ -114,23 +120,26 @@ export default function CobrosPage() {
       setPeriodos(list);
       alert("Período marcado como descontado.");
     } catch (e) {
-      console.error(e);
+      console.error("Error marcando descontado", e);
       alert("No fue posible marcar como descontado.");
     }
   }
 
-  const totalPreview = useMemo(() => kpis.total.toLocaleString("es-CR", { style: "currency", currency: "CRC" }), [kpis.total]);
+  const totalPreview = useMemo(
+    () => kpis.total.toLocaleString("es-CR", { style: "currency", currency: "CRC" }),
+    [kpis.total]
+  );
 
   return (
     <div className="page container">
       <h1 className="title">Cobros</h1>
 
-      {/* Filtros / acciones */}
+      {/* ---------------- Período ---------------- */}
       <div className="card">
         <div className="card__header">
           <h2 className="card__title">Período</h2>
           <div className="chip">
-            Total preview: <strong> {totalPreview}</strong> · Asociados: {kpis.asociados} · Ventas: {kpis.ventas}
+            Total preview: <strong>{totalPreview}</strong> · Asociados: {kpis.asociados} · Ventas: {kpis.ventas}
           </div>
         </div>
         <div className="card__body">
@@ -155,8 +164,12 @@ export default function CobrosPage() {
                 />
               </div>
               <div style={{ display: "flex", alignItems: "end", gap: 8 }}>
-                <button className="btn" onClick={() => setPeriodo(quincenaActual())}>Quincena actual</button>
-                <button className="btn" onClick={() => setPeriodo(quincenaAnterior())}>Quincena anterior</button>
+                <button className="btn" onClick={() => setPeriodo(quincenaActual())}>
+                  Quincena actual
+                </button>
+                <button className="btn" onClick={() => setPeriodo(quincenaAnterior())}>
+                  Quincena anterior
+                </button>
               </div>
             </div>
 
@@ -169,8 +182,12 @@ export default function CobrosPage() {
               </button>
               {selPeriodo && (
                 <>
-                  <button className="btn" onClick={doExportCSV}>Exportar CSV</button>
-                  <button className="btn ghost" onClick={doDescontado}>Marcar como descontado</button>
+                  <button className="btn" onClick={doExportCSV}>
+                    Exportar CSV
+                  </button>
+                  <button className="btn ghost" onClick={doDescontado}>
+                    Marcar como descontado
+                  </button>
                 </>
               )}
             </div>
@@ -178,7 +195,7 @@ export default function CobrosPage() {
         </div>
       </div>
 
-      {/* Resumen por asociado (preview) */}
+      {/* ---------------- Resumen por asociado ---------------- */}
       <div className="card">
         <div className="card__header">
           <h2 className="card__title">Resumen por asociado (preview)</h2>
@@ -207,7 +224,9 @@ export default function CobrosPage() {
                     <td>{r.employee_code ?? "-"}</td>
                     <td style={{ textAlign: "right" }}>{r.ventas}</td>
                     <td style={{ textAlign: "right" }}>{r.items}</td>
-                    <td style={{ textAlign: "right" }}>{r.total.toLocaleString("es-CR", { style: "currency", currency: "CRC" })}</td>
+                    <td style={{ textAlign: "right" }}>
+                      {r.total.toLocaleString("es-CR", { style: "currency", currency: "CRC" })}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -216,7 +235,7 @@ export default function CobrosPage() {
         </div>
       </div>
 
-      {/* Detalle del período (preview) */}
+      {/* ---------------- Detalle del período ---------------- */}
       <div className="card">
         <div className="card__header">
           <h2 className="card__title">Detalle del período (preview)</h2>
@@ -245,8 +264,12 @@ export default function CobrosPage() {
                     <td>{d.usuario}</td>
                     <td>{d.producto}</td>
                     <td style={{ textAlign: "right" }}>{d.cantidad}</td>
-                    <td style={{ textAlign: "right" }}>{d.precio.toLocaleString("es-CR", { style: "currency", currency: "CRC" })}</td>
-                    <td style={{ textAlign: "right" }}>{d.total.toLocaleString("es-CR", { style: "currency", currency: "CRC" })}</td>
+                    <td style={{ textAlign: "right" }}>
+                      {d.precio.toLocaleString("es-CR", { style: "currency", currency: "CRC" })}
+                    </td>
+                    <td style={{ textAlign: "right" }}>
+                      {d.total.toLocaleString("es-CR", { style: "currency", currency: "CRC" })}
+                    </td>
                     <td>{d.venta_id}</td>
                   </tr>
                 ))}
@@ -256,7 +279,7 @@ export default function CobrosPage() {
         </div>
       </div>
 
-      {/* Histórico de períodos ya generados */}
+      {/* ---------------- Histórico ---------------- */}
       <div className="card">
         <div className="card__header">
           <h2 className="card__title">Histórico de períodos</h2>
@@ -286,18 +309,26 @@ export default function CobrosPage() {
                     <td>{p.fin}</td>
                     <td><span className="chip">{p.estado}</span></td>
                     <td style={{ textAlign: "right" }}>{p.asociados}</td>
-                    <td style={{ textAlign: "right" }}>{p.total.toLocaleString("es-CR", { style: "currency", currency: "CRC" })}</td>
+                    <td style={{ textAlign: "right" }}>
+                      {p.total.toLocaleString("es-CR", { style: "currency", currency: "CRC" })}
+                    </td>
                     <td>
                       <div style={{ display: "flex", gap: 6 }}>
                         <button className="btn" onClick={() => { setSelPeriodo(p.id); loadPeriodoHistorico(p.id); }}>
                           Ver
                         </button>
-                        <button className="btn" onClick={async () => {
-                          const blob = await exportPeriodoCSV(p.id);
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement("a");
-                          a.href = url; a.download = `cobros_periodo_${p.id}.csv`; a.click(); URL.revokeObjectURL(url);
-                        }}>
+                        <button
+                          className="btn"
+                          onClick={async () => {
+                            const blob = await exportPeriodoCSV(p.id);
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = `cobros_periodo_${p.id}.csv`;
+                            a.click();
+                            URL.revokeObjectURL(url);
+                          }}
+                        >
                           CSV
                         </button>
                       </div>
@@ -333,7 +364,9 @@ export default function CobrosPage() {
                         <td>{r.employee_code ?? "-"}</td>
                         <td style={{ textAlign: "right" }}>{r.ventas}</td>
                         <td style={{ textAlign: "right" }}>{r.items}</td>
-                        <td style={{ textAlign: "right" }}>{r.total.toLocaleString("es-CR", { style: "currency", currency: "CRC" })}</td>
+                        <td style={{ textAlign: "right" }}>
+                          {r.total.toLocaleString("es-CR", { style: "currency", currency: "CRC" })}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -363,8 +396,12 @@ export default function CobrosPage() {
                         <td>{d.usuario}</td>
                         <td>{d.producto}</td>
                         <td style={{ textAlign: "right" }}>{d.cantidad}</td>
-                        <td style={{ textAlign: "right" }}>{d.precio.toLocaleString("es-CR", { style: "currency", currency: "CRC" })}</td>
-                        <td style={{ textAlign: "right" }}>{d.total.toLocaleString("es-CR", { style: "currency", currency: "CRC" })}</td>
+                        <td style={{ textAlign: "right" }}>
+                          {d.precio.toLocaleString("es-CR", { style: "currency", currency: "CRC" })}
+                        </td>
+                        <td style={{ textAlign: "right" }}>
+                          {d.total.toLocaleString("es-CR", { style: "currency", currency: "CRC" })}
+                        </td>
                         <td>{d.venta_id}</td>
                       </tr>
                     ))}

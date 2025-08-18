@@ -1,7 +1,6 @@
 # backend/routers/__init__.py
-from . import auth, products, inventory, ventas, audit, payment, dashboard, cobros
+from . import auth, products, inventory, ventas, audit, payment, dashboard, cobros, users
 
-# Lista de routers disponibles en el proyecto
 all_routers = [
     auth.router,
     products.router,
@@ -11,4 +10,5 @@ all_routers = [
     payment.router,
     dashboard.router,
     cobros.router,
+    users.router,  # 👈 nuevo
 ]

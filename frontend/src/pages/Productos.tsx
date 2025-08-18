@@ -1,4 +1,3 @@
-// frontend/src/pages/Productos.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 
@@ -13,8 +12,16 @@ type Producto = {
   precio_venta: number;
 };
 
-const currency = new Intl.NumberFormat("es-CR", { style: "currency", currency: "CRC", maximumFractionDigits: 0 });
-const pct = new Intl.NumberFormat("es-CR", { style: "percent", maximumFractionDigits: 0 });
+const currency = new Intl.NumberFormat("es-CR", {
+  style: "currency",
+  currency: "CRC",
+  maximumFractionDigits: 0,
+});
+
+const pct = new Intl.NumberFormat("es-CR", {
+  style: "percent",
+  maximumFractionDigits: 0,
+});
 
 export default function ProductosPage() {
   // Form
@@ -45,14 +52,17 @@ export default function ProductosPage() {
       setCargandoLista(true);
       const { data } = await api.get<Producto[]>("/productos/");
       setProductos(data || []);
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
       setError("No se pudieron cargar los productos.");
     } finally {
       setCargandoLista(false);
     }
   }
-  useEffect(() => { cargarProductos(); }, []);
+
+  useEffect(() => {
+    cargarProductos();
+  }, []);
 
   const filtrados = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -69,6 +79,12 @@ export default function ProductosPage() {
     e.preventDefault();
     setMensaje(null);
     setError(null);
+
+    if (!descripcion.trim()) {
+      setError("La descripción es obligatoria.");
+      return;
+    }
+
     setGuardando(true);
     try {
       const payload = {
@@ -76,17 +92,17 @@ export default function ProductosPage() {
         marca: marca.trim(),
         presentacion: presentacion.trim(),
         codigo_barras: codigoBarras.trim(),
-        costo: Number(costo),
-        margen_utilidad: Number(margenPct) / 100, // fracción
-        precio_venta: Number(precioVenta),
+        costo: isNaN(Number(costo)) ? 0 : Number(costo),
+        margen_utilidad: isNaN(Number(margenPct)) ? 0 : Number(margenPct) / 100, // fracción
+        precio_venta: isNaN(Number(precioVenta)) ? 0 : Number(precioVenta),
       };
       await api.post("/productos/", payload);
-      setMensaje("Producto creado correctamente.");
+      setMensaje("✅ Producto creado correctamente.");
       limpiar();
       await cargarProductos();
-    } catch (e: any) {
-      console.error(e);
-      const msg = e?.response?.data?.detail ?? e?.message ?? "Ocurrió un error al guardar.";
+    } catch (err: any) {
+      console.error(err);
+      const msg = err?.response?.data?.detail ?? err?.message ?? "Ocurrió un error al guardar.";
       setError(typeof msg === "string" ? msg : JSON.stringify(msg));
     } finally {
       setGuardando(false);
@@ -94,18 +110,23 @@ export default function ProductosPage() {
   }
 
   function limpiar() {
-    setDescripcion(""); setMarca(""); setPresentacion(""); setCodigoBarras("");
-    setCosto(0); setMargenPct(30); setPrecioVenta(0);
-    setError(null); setMensaje(null);
+    setDescripcion("");
+    setMarca("");
+    setPresentacion("");
+    setCodigoBarras("");
+    setCosto(0);
+    setMargenPct(30);
+    setPrecioVenta(0);
+    setError(null);
+    setMensaje(null);
   }
 
   return (
     <div className="container page page-productos">
       <h1 className="title">Productos</h1>
 
-      {/* Ojo: mantenemos tu grilla original: grid grid--2 */}
       <div className="grid grid--2">
-        {/* FORM ARRIBA (forzado por CSS a ocupar toda la fila) */}
+        {/* FORMULARIO */}
         <div className="card card--form">
           <div className="card__body">
             <h2 className="card__title">Crear producto</h2>
@@ -113,36 +134,66 @@ export default function ProductosPage() {
             <form onSubmit={onSubmit} style={{ display: "grid", gap: 12 }}>
               <div>
                 <label className="label">Descripción</label>
-                <input className="input" value={descripcion} onChange={(e) => setDescripcion(e.target.value)} required />
+                <input
+                  className="input"
+                  value={descripcion}
+                  onChange={(e) => setDescripcion(e.target.value)}
+                  required
+                />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
                   <label className="label">Marca</label>
-                  <input className="input" value={marca} onChange={(e) => setMarca(e.target.value)} />
+                  <input
+                    className="input"
+                    value={marca}
+                    onChange={(e) => setMarca(e.target.value)}
+                  />
                 </div>
                 <div>
                   <label className="label">Presentación</label>
-                  <input className="input" value={presentacion} onChange={(e) => setPresentacion(e.target.value)} />
+                  <input
+                    className="input"
+                    value={presentacion}
+                    onChange={(e) => setPresentacion(e.target.value)}
+                  />
                 </div>
               </div>
               <div>
                 <label className="label">Código de barras</label>
-                <input className="input" value={codigoBarras} onChange={(e) => setCodigoBarras(e.target.value)} />
+                <input
+                  className="input"
+                  value={codigoBarras}
+                  onChange={(e) => setCodigoBarras(e.target.value)}
+                />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
                 <div>
                   <label className="label">Costo (₡)</label>
-                  <input className="input" type="number" min={0} step="1"
-                         value={costo} onChange={(e) => setCosto(parseFloat(e.target.value || "0"))}/>
+                  <input
+                    className="input"
+                    type="number"
+                    min={0}
+                    step="1"
+                    value={costo}
+                    onChange={(e) => setCosto(parseFloat(e.target.value || "0"))}
+                  />
                 </div>
                 <div>
                   <label className="label">Margen (%)</label>
-                  <input className="input" type="number" min={0} max={500} step="1"
-                         value={margenPct} onChange={(e) => setMargenPct(parseFloat(e.target.value || "0"))}/>
+                  <input
+                    className="input"
+                    type="number"
+                    min={0}
+                    max={500}
+                    step="1"
+                    value={margenPct}
+                    onChange={(e) => setMargenPct(parseFloat(e.target.value || "0"))}
+                  />
                 </div>
                 <div>
                   <label className="label">Precio venta (₡)</label>
-                  <input className="input" type="number" readOnly value={precioVenta}/>
+                  <input className="input" type="number" readOnly value={precioVenta} />
                 </div>
               </div>
 
@@ -153,19 +204,34 @@ export default function ProductosPage() {
                 <button className="btn primary" disabled={guardando} type="submit">
                   {guardando ? "Guardando..." : "Guardar"}
                 </button>
-                <button className="btn" type="button" onClick={limpiar} disabled={guardando}>Limpiar</button>
+                <button className="btn" type="button" onClick={limpiar} disabled={guardando}>
+                  Limpiar
+                </button>
               </div>
             </form>
           </div>
         </div>
 
-        {/* LISTADO ABAJO (por CSS) */}
+        {/* LISTADO */}
         <div className="card card--table">
           <div className="card__body">
-            <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "space-between", marginBottom: 12 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                justifyContent: "space-between",
+                marginBottom: 12,
+              }}
+            >
               <h2 className="card__title">Listado</h2>
-              <input className="input" placeholder="Buscar por descripción, marca, código…"
-                     value={q} onChange={(e) => setQ(e.target.value)} style={{ minWidth: 260 }}/>
+              <input
+                className="input"
+                placeholder="Buscar por descripción, marca, código…"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                style={{ minWidth: 260 }}
+              />
             </div>
 
             <div style={{ overflowX: "auto" }}>
@@ -184,9 +250,17 @@ export default function ProductosPage() {
                 </thead>
                 <tbody>
                   {cargandoLista ? (
-                    <tr><td colSpan={8} className="table__empty">Cargando…</td></tr>
+                    <tr>
+                      <td colSpan={8} className="table__empty">
+                        Cargando…
+                      </td>
+                    </tr>
                   ) : filtrados.length === 0 ? (
-                    <tr><td colSpan={8} className="table__empty">No hay datos para mostrar.</td></tr>
+                    <tr>
+                      <td colSpan={8} className="table__empty">
+                        No hay datos para mostrar.
+                      </td>
+                    </tr>
                   ) : (
                     filtrados.map((p) => (
                       <tr key={p.id}>
@@ -206,7 +280,6 @@ export default function ProductosPage() {
             </div>
           </div>
         </div>
-
       </div>
     </div>
   );

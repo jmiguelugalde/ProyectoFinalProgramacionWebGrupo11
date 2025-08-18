@@ -1,56 +1,38 @@
-import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
-import Navbar from "./components/Navbar";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./routes/ProtectedRoute";
-
+import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-import LoginPage from "./pages/Login";
-import ProductsPage from "./pages/Productos";
-import SalesPage from "./pages/Ventas";
-import CobrosPage from "./pages/Cobros";
+import AdminPage from "./pages/AdminPage";
 
-export default function App() {
+function App() {
   return (
-    <>
-      <Navbar />
-      <main className="container" style={{ paddingTop: 24, paddingBottom: 48 }}>
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute roles={["admin", "contador", "cliente"]}>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/login" element={<LoginPage />} />
-          <Route
-            path="/productos"
-            element={
-              <ProtectedRoute roles={["admin", "contador"]}>
-                <ProductsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/ventas"
-            element={
-              <ProtectedRoute roles={["admin", "contador"]}>
-                <SalesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/cobros"
-            element={
-              <ProtectedRoute roles={["admin", "contador"]}>
-                <CobrosPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-    </>
+    <BrowserRouter>
+      <Routes>
+        {/* Ruta pública */}
+        <Route path="/login" element={<Login />} />
+
+        {/* Ruta protegida: todos los usuarios autenticados */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute roles={["admin", "contabilidad", "cliente"]}>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Ruta protegida: solo admins */}
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute roles={["admin"]}>
+              <AdminPage />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }
+
+export default App;

@@ -1,8 +1,6 @@
-// frontend/src/pages/Ventas.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import api from "../services/api";
 
-// ⚠ Ajusta si tu backend usa otra ruta (p.ej. "/sales/")
 const VENTAS_PATH = "/ventas/";
 
 type Product = {
@@ -52,20 +50,19 @@ export default function VentasPage() {
     const s = t.trim().toLowerCase();
     if (!s) return null;
 
-    // 1) exacto por código
     const exact = products.find(
       (p) => (p.codigo_barras || "").trim().toLowerCase() === s
     );
     if (exact) return exact;
 
-    // 2) texto (por si digitó la descripción)
-    const partial = products.find((p) => {
-      const d = (p.descripcion || "").toLowerCase();
-      const m = (p.marca || "").toLowerCase();
-      const pr = (p.presentacion || "").toLowerCase();
-      return d.includes(s) || m.includes(s) || pr.includes(s);
-    });
-    return partial || null;
+    return (
+      products.find((p) => {
+        const d = (p.descripcion || "").toLowerCase();
+        const m = (p.marca || "").toLowerCase();
+        const pr = (p.presentacion || "").toLowerCase();
+        return d.includes(s) || m.includes(s) || pr.includes(s);
+      }) || null
+    );
   }
 
   function addToCart(p: Product, q: number) {
@@ -96,7 +93,8 @@ export default function VentasPage() {
     () => cart.reduce((acc, l) => acc + l.product.precio_venta * l.qty, 0),
     [cart]
   );
-  const total = subtotal; // sin IVA ni descuentos
+
+  const total = subtotal;
 
   async function registrarVenta() {
     if (cart.length === 0) return;
@@ -104,24 +102,28 @@ export default function VentasPage() {
     setMsg(null);
     try {
       const payload = {
-        metodo_pago: "rebajo_planilla",
         items: cart.map((l) => ({
           producto_id: l.product.id,
           cantidad: l.qty,
-          precio_unitario: l.product.precio_venta,
-          total_linea: l.product.precio_venta * l.qty,
         })),
-        total,
       };
-      await api.post(VENTAS_PATH, payload);
-      setMsg("✅ Venta registrada correctamente.");
+      const { data } = await api.post(VENTAS_PATH, payload);
+      setMsg(
+        `✅ Venta registrada correctamente. ID(s): ${
+          data?.venta_id ? JSON.stringify(data.venta_id) : "-"
+        }`
+      );
       setCart([]);
       setTerm("");
       setQty(1);
       focusScan();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setMsg("❌ No se pudo registrar la venta.");
+      const msg =
+        err?.response?.data?.detail ||
+        err?.message ||
+        "❌ No se pudo registrar la venta.";
+      setMsg(typeof msg === "string" ? msg : JSON.stringify(msg));
     } finally {
       setLoading(false);
     }
@@ -156,7 +158,6 @@ export default function VentasPage() {
     <div className="page container">
       <h1 className="title">Ventas (POS)</h1>
 
-      {/* Pantalla en una sola columna */}
       <div className="stack">
         {/* Escanear / Buscar */}
         <section className="card">
@@ -175,7 +176,6 @@ export default function VentasPage() {
                 <input
                   ref={scanRef}
                   className="input"
-                  placeholder="Escanee o digite el GTIN del producto"
                   value={term}
                   onChange={(e) => setTerm(e.target.value)}
                   autoFocus
@@ -369,7 +369,6 @@ export default function VentasPage() {
                   className="btn primary"
                   onClick={registrarVenta}
                   disabled={cart.length === 0 || loading}
-                  title="Único método: rebajo de planilla"
                   type="button"
                 >
                   {loading ? "Registrando…" : "Registrar venta"}

@@ -1,14 +1,19 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm
-from backend.models.user import UserCreate, UserInDB
+from backend.models.user import UserCreate
 from backend.auth_utils import hash_password, verify_password, create_access_token
 import mysql.connector
 import os
 from dotenv import load_dotenv
+from typing import TypedDict, cast
 
 load_dotenv()
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+
+# -----------------------------
+# Conexión a la base de datos
+# -----------------------------
 def get_db_connection():
     return mysql.connector.connect(
         host=os.getenv("DB_HOST"),
@@ -18,31 +23,72 @@ def get_db_connection():
         database=os.getenv("DB_NAME")
     )
 
+
+# -----------------------------
+# Tipado de usuario en DB
+# -----------------------------
+class DBUser(TypedDict):
+    id: int
+    username: str
+    email: str
+    role: str
+    hashed_password: str
+
+
+# -----------------------------
+# Registro de usuario
+# -----------------------------
 @router.post("/register")
 def register(user: UserCreate):
     conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT id FROM users WHERE username = %s OR email = %s", (user.username, user.email))
+    cursor = conn.cursor(dictionary=True)
+
+    # Verificar si ya existe usuario o correo
+    cursor.execute(
+        "SELECT id FROM users WHERE username = %s OR email = %s",
+        (user.username, user.email),
+    )
     if cursor.fetchone():
+        conn.close()
         raise HTTPException(status_code=400, detail="Usuario o correo ya existe")
 
+    # Insertar nuevo usuario
     hashed = hash_password(user.password)
-    cursor.execute("""INSERT INTO users (username, email, hashed_password, role)
-                      VALUES (%s, %s, %s, %s)""", (user.username, user.email, hashed, user.role))
+    cursor.execute(
+        """
+        INSERT INTO users (username, email, hashed_password, role)
+        VALUES (%s, %s, %s, %s)
+        """,
+        (user.username, user.email, hashed, user.role),
+    )
     conn.commit()
     conn.close()
-    return {"mensaje": "Usuario registrado exitosamente"}
 
+    return {"message": "Usuario registrado exitosamente"}
+
+
+# -----------------------------
+# Login de usuario
+# -----------------------------
 @router.post("/login")
 def login(form_data: OAuth2PasswordRequestForm = Depends()):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
+
     cursor.execute("SELECT * FROM users WHERE username = %s", (form_data.username,))
-    db_user = cursor.fetchone()
+    result = cursor.fetchone()
     conn.close()
 
-    if not db_user or not verify_password(form_data.password, db_user['hashed_password']):
+    if not result:
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
 
-    token = create_access_token({"sub": db_user['username'], "role": db_user['role']})
+    db_user = cast(DBUser, result)  # 👈 Tipado explícito para Pylance
+
+    # Verificar contraseña
+    if not verify_password(form_data.password, db_user["hashed_password"]):
+        raise HTTPException(status_code=401, detail="Credenciales incorrectas")
+
+    # Generar token JWT
+    token = create_access_token({"sub": db_user["username"], "role": db_user["role"]})
+
     return {"access_token": token, "token_type": "bearer"}

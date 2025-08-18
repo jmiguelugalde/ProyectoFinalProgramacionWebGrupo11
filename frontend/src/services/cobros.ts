@@ -1,6 +1,10 @@
 import api from "./api";
 
-export type Periodo = { inicio: string; fin: string };
+/* ----------------------------- Tipos ----------------------------- */
+export type Periodo = { 
+  inicio: string; 
+  fin: string; 
+};
 
 export type ResumenAsociado = {
   user_id: number;
@@ -13,7 +17,7 @@ export type ResumenAsociado = {
 };
 
 export type DetalleItem = {
-  fecha: string;           // ISO
+  fecha: string;           // ISO string
   usuario: string;
   producto: string;
   cantidad: number;
@@ -41,37 +45,46 @@ export type PeriodoCobro = {
   creado_en: string;
 };
 
-export async function previewCobros(p: Periodo) {
+/* -------------------------- Funciones API ------------------------- */
+
+/** Previsualiza un período de cobros antes de generarlo */
+export async function previewCobros(p: Periodo): Promise<PreviewCobros> {
   const { data } = await api.post<PreviewCobros>("/cobros/preview", p);
   return data;
 }
 
-export async function generarCobros(p: Periodo) {
+/** Genera oficialmente los cobros de un período */
+export async function generarCobros(p: Periodo): Promise<{ periodo_id: number; totales: PreviewCobros }> {
   const { data } = await api.post<{ periodo_id: number; totales: PreviewCobros }>("/cobros/generar", p);
   return data;
 }
 
-export async function listarPeriodos() {
+/** Lista todos los períodos de cobro */
+export async function listarPeriodos(): Promise<PeriodoCobro[]> {
   const { data } = await api.get<PeriodoCobro[]>("/cobros/periodos");
   return data;
 }
 
-export async function resumenPeriodo(id: number) {
+/** Obtiene el resumen de asociados de un período */
+export async function resumenPeriodo(id: number): Promise<ResumenAsociado[]> {
   const { data } = await api.get<ResumenAsociado[]>(`/cobros/periodos/${id}/resumen`);
   return data;
 }
 
-export async function detallePeriodo(id: number) {
+/** Obtiene el detalle de ventas de un período */
+export async function detallePeriodo(id: number): Promise<DetalleItem[]> {
   const { data } = await api.get<DetalleItem[]>(`/cobros/periodos/${id}/detalle`);
   return data;
 }
 
-export async function marcarDescontado(id: number) {
+/** Marca un período como descontado */
+export async function marcarDescontado(id: number): Promise<{ ok: true }> {
   const { data } = await api.post<{ ok: true }>(`/cobros/periodos/${id}/marcar-descontado`, {});
   return data;
 }
 
-export async function exportPeriodoCSV(id: number) {
+/** Exporta un período a CSV (Blob para descarga) */
+export async function exportPeriodoCSV(id: number): Promise<Blob> {
   const res = await api.get(`/cobros/periodos/${id}/export?format=csv`, { responseType: "blob" });
   return res.data as Blob;
 }

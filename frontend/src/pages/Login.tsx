@@ -4,10 +4,9 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
 import { login } from "../services/auth";
-import api from "../services/api";
-import { useAuth } from "../routes/AuthContext";
+import { useAuth } from "../context/AuthContext";
 
-export default function LoginPage() {
+export default function Login() {
   const navigate = useNavigate();
   const { setSession } = useAuth();
 
@@ -23,6 +22,8 @@ export default function LoginPage() {
 
     try {
       const res = await login(username, password);
+
+      // Intentamos obtener el token de distintas formas
       const token =
         (res as any)?.access_token ??
         (res as any)?.token ??
@@ -30,13 +31,13 @@ export default function LoginPage() {
 
       if (!token) throw new Error("Respuesta inesperada del servidor (sin token).");
 
-      localStorage.setItem("token", token);
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-      // Guarda sesión (Session: { token: string | null; user?: { username: string } | null })
+      // Guardamos la sesión correctamente según la interfaz Session
       setSession?.({
-        token,
-        user: (res as any)?.user ?? { username },
+        token: token,
+        user: {
+          username: (res as any)?.username ?? username,
+          role: (res as any)?.role ?? "cliente",
+        },
       });
 
       navigate("/", { replace: true });
