@@ -1,3 +1,4 @@
+// src/App.tsx
 import { Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import Login from "./pages/Login";
@@ -7,20 +8,30 @@ import AdminPage from "./pages/AdminPage";
 function App() {
   return (
     <Routes>
-      {/* Ruta pública */}
+      {/* Página de login (pública) */}
       <Route path="/login" element={<Login />} />
 
-      {/* Ruta protegida: todos los usuarios autenticados */}
+      {/* Ruta principal protegida */}
       <Route
         path="/"
         element={
-          <ProtectedRoute roles={["admin", "contabilidad", "cliente"]}>
+          <ProtectedRoute roles={["admin", "contador", "cliente"]}>
             <Dashboard />
           </ProtectedRoute>
         }
       />
 
-      {/* Ruta protegida: solo admins */}
+      {/* Alias explícito para /dashboard*/}
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute roles={["admin", "contador", "cliente"]}>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Ruta solo para admin */}
       <Route
         path="/admin"
         element={
@@ -30,7 +41,7 @@ function App() {
         }
       />
 
-      {/* Ruta fallback */}
+      {/* Fallback para rutas no mapeadas */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

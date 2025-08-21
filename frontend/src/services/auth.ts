@@ -1,4 +1,5 @@
 import api from "./api";
+import { AxiosHeaders } from "axios";
 
 export type LoginResponse = {
   access_token: string;
@@ -15,7 +16,10 @@ export async function login(
   body.set("password", password);
 
   const { data } = await api.post("/auth/login", body.toString(), {
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    headers: new AxiosHeaders({
+      "Content-Type": "application/x-www-form-urlencoded",
+    }),
   });
+
   return data;
 }

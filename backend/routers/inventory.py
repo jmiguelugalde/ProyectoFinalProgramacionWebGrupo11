@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 router = APIRouter(prefix="/inventario", tags=["inventario"])
 
+
 def get_db_connection():
     return mysql.connector.connect(
         host=os.getenv("DB_HOST"),
@@ -18,8 +19,12 @@ def get_db_connection():
         database=os.getenv("DB_NAME")
     )
 
+
 @router.post("/entrada", response_model=dict)
-def registrar_entrada(data: InventoryEntryCreate, _=Depends(contador_required)):
+def registrar_entrada(
+    data: InventoryEntryCreate, 
+    _=Depends(contador_required)
+):
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -34,9 +39,15 @@ def registrar_entrada(data: InventoryEntryCreate, _=Depends(contador_required)):
         (data.producto_id, data.cantidad, data.costo_unitario, datetime.now())
     )
 
-    # Actualizar stock
+    # Actualizar stock y precio
     cursor.execute(
-        "UPDATE products SET costo = %s, precio_venta = ROUND(%s * (1 + margen_utilidad / 100), 2), stock = COALESCE(stock, 0) + %s WHERE id = %s",
+        """
+        UPDATE products
+        SET costo = %s,
+            precio_venta = ROUND(%s * (1 + margen_utilidad / 100), 2),
+            stock = COALESCE(stock, 0) + %s
+        WHERE id = %s
+        """,
         (data.costo_unitario, data.costo_unitario, data.cantidad, data.producto_id)
     )
 
@@ -44,8 +55,11 @@ def registrar_entrada(data: InventoryEntryCreate, _=Depends(contador_required)):
     conn.close()
     return {"mensaje": "Entrada de inventario registrada y stock actualizado correctamente"}
 
+
 @router.get("/entradas", response_model=list[InventoryEntryOut])
-def listar_entradas(_=Depends(contador_required)):
+def listar_entradas(
+    _=Depends(contador_required)
+):
     conn = get_db_connection()
     cursor = conn.cursor(dictionary=True)
     cursor.execute("SELECT * FROM inventory_entries")

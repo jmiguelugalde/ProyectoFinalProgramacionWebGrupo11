@@ -33,7 +33,9 @@ export type CreateSaleResponse = {
 // -------------------------
 
 // Crear una venta
-export async function createSale(payload: CreateSalePayload): Promise<CreateSaleResponse> {
+export async function createSale(
+  payload: CreateSalePayload
+): Promise<CreateSaleResponse> {
   const { data } = await api.post<CreateSaleResponse>("/ventas/agregar", payload);
   return data;
 }
@@ -45,7 +47,9 @@ export async function listMySales(): Promise<SaleResponse[]> {
 }
 
 // Eliminar una venta por ID
-export async function deleteSale(id: number): Promise<{ mensaje: string }> {
+export async function deleteSale(
+  id: number
+): Promise<{ mensaje: string }> {
   const { data } = await api.delete<{ mensaje: string }>(`/ventas/${id}`);
   return data;
 }

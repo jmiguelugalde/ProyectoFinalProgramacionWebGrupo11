@@ -1,3 +1,4 @@
+// frontend/src/context/AuthContext.tsx
 import React, {
   createContext,
   useContext,
@@ -6,19 +7,20 @@ import React, {
   useState,
   type ReactNode,
 } from "react";
-import api from "../services/api";
+import { useNavigate } from "react-router-dom";
+import api, { login as loginApi, getProfile } from "../services/api";
 
-// Sesión con token + usuario + rol
+// Sesión con token + usuario + role
 export type Session = {
   token: string | null;
-  user?: { username: string; role: string } | null;
+  user: { username: string; role: string } | null;
 };
 
 type AuthContextType = {
   session: Session;
   isAuthenticated: boolean;
   setSession: (s: Session) => void;
-  login: (token: string, user: { username: string; role: string }) => void;
+  login: (username: string, password: string) => Promise<void>;
   logout: () => void;
 };
 
@@ -35,6 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   });
 
+  const navigate = useNavigate();
   const isAuthenticated = !!session.token;
 
   useEffect(() => {
@@ -53,12 +56,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [session]);
 
-  const login = (token: string, user: { username: string; role: string }) => {
-    setSession({ token, user });
+  // ✅ login primero guarda el token, luego pide el perfil
+  const login = async (username: string, password: string) => {
+    try {
+      const response = await loginApi({ username, password });
+      const token = response.data.access_token;
+
+      // 1. Guarda el token en el header y en localStorage
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      localStorage.setItem("token", token);
+
+      // 2. Ahora sí pide el perfil
+      let user = { username, role: "user" }; // fallback si no hay perfil
+      try {
+        const profileRes = await getProfile();
+        user = {
+          username: profileRes.data.username,
+          role: profileRes.data.role || "user",
+        };
+      } catch (err) {
+        console.warn("No se pudo cargar perfil, usando fallback:", err);
+      }
+
+      // 3. Setear sesión
+      setSession({ token, user });
+      navigate("/dashboard");
+    } catch (err) {
+      console.error("Error en login:", err);
+      throw err;
+    }
   };
 
   const logout = () => {
     setSession({ token: null, user: null });
+    delete api.defaults.headers.common["Authorization"];
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    localStorage.removeItem("role");
+    navigate("/login");
   };
 
   const value = useMemo<AuthContextType>(

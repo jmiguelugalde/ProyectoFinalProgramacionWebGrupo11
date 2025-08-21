@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.security import OAuth2PasswordRequestForm
-from backend.models.user import UserCreate
+from backend.schemas import UserCreate
 from backend.auth_utils import hash_password, verify_password, create_access_token
 import mysql.connector
 import os
@@ -31,8 +31,8 @@ class DBUser(TypedDict):
     id: int
     username: str
     email: str
-    role: str
-    hashed_password: str
+    role: str   
+    password: str
 
 
 # -----------------------------
@@ -52,11 +52,11 @@ def register(user: UserCreate):
         conn.close()
         raise HTTPException(status_code=400, detail="Usuario o correo ya existe")
 
-    # Insertar nuevo usuario
+    # Hashear contraseña antes de guardar
     hashed = hash_password(user.password)
     cursor.execute(
         """
-        INSERT INTO users (username, email, hashed_password, role)
+        INSERT INTO users (username, email, password, role)
         VALUES (%s, %s, %s, %s)
         """,
         (user.username, user.email, hashed, user.role),
@@ -82,13 +82,18 @@ def login(form_data: OAuth2PasswordRequestForm = Depends()):
     if not result:
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
 
-    db_user = cast(DBUser, result)  # 👈 Tipado explícito para Pylance
+    db_user = cast(DBUser, result)
 
-    # Verificar contraseña
-    if not verify_password(form_data.password, db_user["hashed_password"]):
+    # Verificar contraseña con bcrypt
+    if not verify_password(form_data.password, db_user["password"]):
         raise HTTPException(status_code=401, detail="Credenciales incorrectas")
 
-    # Generar token JWT
+    # Generar token JWT con role correcto
     token = create_access_token({"sub": db_user["username"], "role": db_user["role"]})
 
-    return {"access_token": token, "token_type": "bearer"}
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "username": db_user["username"],
+        "role": db_user["role"]
+    }

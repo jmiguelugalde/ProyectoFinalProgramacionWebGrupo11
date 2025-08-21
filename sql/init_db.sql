@@ -1,9 +1,9 @@
 -- ============================================
 -- Reinicio completo del esquema
 -- ============================================
-DROP DATABASE IF EXISTS punto_venta;
-CREATE DATABASE punto_venta;
-USE punto_venta;
+DROP DATABASE IF EXISTS pulperia;
+CREATE DATABASE pulperia;
+USE pulperia;
 
 -- ============================================
 -- Tabla de usuarios
@@ -11,10 +11,16 @@ USE punto_venta;
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    hashed_password VARCHAR(255) NOT NULL,
-    role ENUM('cliente', 'contador', 'admin') NOT NULL DEFAULT 'cliente',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    password VARCHAR(255) NOT NULL,
+    role ENUM('admin','contador','cliente') NOT NULL
+);
+
+-- Usuario inicial (password encriptada con bcrypt: "admin123")
+INSERT INTO users (username, password, role)
+VALUES (
+    'admin',
+    '$2b$12$4XDWj3jJ4V0FvYpXqX9E7eQ6dFQ3lqpFjYbAVdI6Lw2jQKjYp3P8m',
+    'admin'
 );
 
 -- ============================================
@@ -78,9 +84,6 @@ CREATE TABLE IF NOT EXISTS ventas_hist (
     FOREIGN KEY (usuario_id) REFERENCES users(id)
 );
 
--- ============================================
--- Trigger: cuando se elimina una venta, se mueve a ventas_hist
--- ============================================
 DELIMITER $$
 CREATE TRIGGER after_delete_ventas
 AFTER DELETE ON ventas

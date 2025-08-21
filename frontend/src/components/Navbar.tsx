@@ -1,9 +1,10 @@
+// frontend/src/components/Navbar.tsx
 import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function Navbar() {
-  const { token, logout } = useAuth();
+  const { session, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -23,7 +24,9 @@ export default function Navbar() {
     background: "rgba(37, 99, 235, .12)",
   };
 
-  const role = token?.role;
+  // Manejo seguro de null
+  const role = session?.user?.role;
+  const isAuthenticated = !!session?.token;
 
   return (
     <header className="navbar">
@@ -39,7 +42,7 @@ export default function Navbar() {
         <div style={{ fontWeight: 800 }}>Punto de Venta</div>
 
         <nav style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          {token && (
+          {isAuthenticated && (
             <>
               <NavLink
                 to="/"
@@ -51,7 +54,7 @@ export default function Navbar() {
                 Dashboard
               </NavLink>
 
-              {(role === "admin" || role === "contabilidad") && (
+              {(role === "admin" || role === "contador") && (
                 <>
                   <NavLink
                     to="/productos"
@@ -85,7 +88,7 @@ export default function Navbar() {
             </>
           )}
 
-          {!token ? (
+          {!isAuthenticated ? (
             <NavLink to="/login" className="btn ghost">
               Login
             </NavLink>

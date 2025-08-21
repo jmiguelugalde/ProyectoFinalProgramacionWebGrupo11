@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 
-type UserRole = "admin" | "contabilidad" | "cliente";
+type UserRole = "admin" | "contador" | "cliente";
 
 interface User {
   id: number;

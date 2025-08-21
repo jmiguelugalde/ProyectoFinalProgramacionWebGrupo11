@@ -1,113 +1,77 @@
-// frontend/src/pages/Login.tsx
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import axios from "axios";
-
-import { login } from "../services/auth";
 import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
-  const navigate = useNavigate();
-  const { setSession } = useAuth();
+  const { login } = useAuth();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function onSubmit(e: React.FormEvent) {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
     setLoading(true);
+    setError(null);
 
     try {
-      const res = await login(username, password);
-
-      // Intentamos obtener el token de distintas formas
-      const token =
-        (res as any)?.access_token ??
-        (res as any)?.token ??
-        (res as any)?.data?.access_token;
-
-      if (!token) throw new Error("Respuesta inesperada del servidor (sin token).");
-
-      // Guardamos la sesión correctamente según la interfaz Session
-      setSession?.({
-        token: token,
-        user: {
-          username: (res as any)?.username ?? username,
-          role: (res as any)?.role ?? "cliente",
-        },
-      });
-
-      navigate("/", { replace: true });
-    } catch (err: unknown) {
-      let msg = "Error al iniciar sesión";
-      if (axios.isAxiosError(err)) {
-        const d = err.response?.data as any;
-        if (typeof d?.detail === "string") msg = d.detail;
-        else if (Array.isArray(d?.detail))
-          msg = d.detail.map((x: any) => x.msg || JSON.stringify(x)).join("; ");
-        else if (d) msg = JSON.stringify(d);
-      } else if (err instanceof Error) {
-        msg = err.message;
-      }
-      setError(msg);
+      console.log("Intentando login con:", username);
+      await login(username, password); 
+    } catch {
+      setError("Usuario o contraseña incorrectos");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="login-shell">
-      <div className="login-card">
-        {/* Columna: formulario */}
-        <div className="login-form-col">
-          <h1 className="login-title">Iniciar sesión</h1>
-          <p className="muted">Usa tu usuario y contraseña.</p>
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-md p-6">
+        <h2 className="text-2xl font-bold text-center mb-6 text-gray-800">
+          Iniciar Sesión
+        </h2>
 
-          {error && <div className="alert error">{error}</div>}
+        {error && (
+          <div className="bg-red-100 text-red-600 p-3 mb-4 rounded text-center">
+            {error}
+          </div>
+        )}
 
-          <form onSubmit={onSubmit} className="login-form">
-            <label htmlFor="username">Usuario</label>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Usuario
+            </label>
             <input
-              id="username"
-              placeholder="Usuario"
+              type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              autoFocus
+              required
+              className="w-full mt-1 px-3 py-2 border rounded-lg focus:ring focus:ring-blue-200"
             />
+          </div>
 
-            <label htmlFor="password">Contraseña</label>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Contraseña
+            </label>
             <input
-              id="password"
               type="password"
-              placeholder="Contraseña"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full mt-1 px-3 py-2 border rounded-lg focus:ring focus:ring-blue-200"
             />
-
-            <button
-              type="submit"
-              className="btn primary"
-              disabled={loading || !username || !password}
-            >
-              {loading ? "Entrando..." : "Entrar"}
-            </button>
-          </form>
-        </div>
-
-        {/* Columna: imagen/hero */}
-        <div
-          className="login-hero-col"
-          style={{ backgroundImage: "url(/img/login-hero.jpg)" }}
-          aria-hidden
-        >
-          <div className="login-hero-overlay">
-            <h2>Punto de Venta</h2>
-            <p>Gestiona productos, ventas y cobros de forma rápida.</p>
           </div>
-        </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+          >
+            {loading ? "Ingresando..." : "Ingresar"}
+          </button>
+        </form>
       </div>
     </div>
   );

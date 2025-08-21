@@ -78,7 +78,7 @@ def main():
     ap = argparse.ArgumentParser(description="Crea un usuario en la tabla 'users'.")
     ap.add_argument("--nombre", required=True, help="Nombre del usuario")
     ap.add_argument("--password", required=True, help="Contraseña del usuario")
-    ap.add_argument("--rol", default="cliente", help="Rol (cliente/admin/contabilidad)")
+    ap.add_argument("--rol", default="cliente", help="Rol (cliente/admin/contador)")
     ap.add_argument("--correo", required=False,
                     help="Correo del usuario (si no se pasa, se usa nombre@local.test)")
     args = ap.parse_args()

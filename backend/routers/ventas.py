@@ -124,7 +124,11 @@ def crear_venta(data: SaleCreateBulk, current_user: TokenData = Depends(cliente_
                     datetime.now(),
                 ),
             )
-            venta_ids.append(cursor.lastrowid)
+            last_id = cursor.lastrowid
+            if last_id is None:
+                conn.rollback()
+                raise HTTPException(status_code=500, detail="No se pudo obtener el ID de la venta")
+            venta_ids.append(int(last_id))  # 👈 forzamos que sea int
 
         conn.commit()
         return {"mensaje": "Venta registrada correctamente", "venta_id": venta_ids}

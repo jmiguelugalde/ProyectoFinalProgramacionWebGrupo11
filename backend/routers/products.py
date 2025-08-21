@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Depends
-from backend.models.product import ProductCreate, ProductUpdate, ProductOut
+from backend.schemas import ProductCreate, ProductUpdate, ProductOut
 from backend.security import admin_required
 import mysql.connector
 import os

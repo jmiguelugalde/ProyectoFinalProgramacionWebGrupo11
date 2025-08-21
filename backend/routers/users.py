@@ -44,14 +44,14 @@ def create_user(user: UserCreate):
 
     hashed = hash_password(user.password)
     cursor.execute(
-        "INSERT INTO users (username, email, hashed_password, role, active) VALUES (%s, %s, %s, %s, %s)",
-        (user.username, user.email, hashed, user.role, True)
+        "INSERT INTO users (username, email, password, role, active) VALUES (%s, %s, %s, %s, %s)",
+        (user.username, user.email, hashed, "user", True)   # 👈 rol fijo "user"
     )
     conn.commit()
     user_id = cursor.lastrowid
     conn.close()
 
-    return {"id": user_id, "username": user.username, "email": user.email, "role": user.role, "active": True}
+    return {"id": user_id, "username": user.username, "email": user.email, "role": "user", "active": True}
 
 # Actualizar usuario
 @router.put("/{user_id}", response_model=UserOut)
@@ -67,13 +67,13 @@ def update_user(user_id: int, user: UserCreate):
     hashed = hash_password(user.password)
 
     cursor.execute(
-        "UPDATE users SET username = %s, email = %s, hashed_password = %s, role = %s WHERE id = %s",
-        (user.username, user.email, hashed, user.role, user_id)
+        "UPDATE users SET username = %s, email = %s, password = %s, role = %s WHERE id = %s",
+        (user.username, user.email, hashed, "user", user_id)  # 👈 rol fijo "user"
     )
     conn.commit()
     conn.close()
 
-    return {"id": user_id, "username": user.username, "email": user.email, "role": user.role, "active": True}
+    return {"id": user_id, "username": user.username, "email": user.email, "role": "user", "active": True}
 
 # Eliminar usuario
 @router.delete("/{user_id}")
